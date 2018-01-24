@@ -181,7 +181,7 @@ TODO: add npm package
 
 ## API Reference
 
-<a name="template" href="#template">#</a> d3.<b>template</b>(<i>selection[, options]</i>) [<>](http://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L25)
+<a name="template" href="#template">#</a> d3.<b>template</b>(<i>selection[, options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L25)
 
 Creates a template from the specified *selection*. The selection might be changed as a result of this. Attributes or text consisting of template references will be removed. Child elements of an element containing a valid grouping attribute (`data-repeat`, `data-if` or `data-with`) will be removed. Different elements will have an attribute (`data-template`) applied for identification purposes.
 
@@ -194,11 +194,11 @@ If *options* is specified it should be an object containing properties describin
         elementSelectorAttribute: "data-template"  // Used to add identification to elements
     }
 
-<a name="render" href="#render">#</a> d3.<b>render</b>(<i>selection, data[, options]</i>) [<>](http://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L57)
+<a name="render" href="#render">#</a> d3.<b>render</b>(<i>selection, data[, options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L57)
 
 Renders *data* onto the specified *selection*. If the `elementSelectorAttribute` is changed during template creation using the *options* parameter, this same value has to be provided for *options* parameter of the *render* function. If no template has been created from *selection* an exception is thrown.
 
-<a name="renderFilter" href="#renderFilter">#</a> d3.<b>renderFilter</b>(<i>name[, filterFunc]</i>) [<>](http://github.com/ErikOnBike/d3-template/blob/master/src/render.js#L10)
+<a name="renderFilter" href="#renderFilter">#</a> d3.<b>renderFilter</b>(<i>name[, filterFunc]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/renderer.js#L10)
 
 Retrieve or register a render filter for the specified *name*. If *filterFunc* is not specified the current filter named *name* is returned. If *filterFunc* is `null` an already registered filter for *name* is removed. If *filterFunc* is a function it is registered under *name* possibly replacing an existing filter. If *filterFunc* is not a function (nor null) an exception is thrown.
 
@@ -217,7 +217,7 @@ The filter function *filterFunc* is called during rendering with the data bound 
 
 Arguments can only be literal values. Removing the quotes around `"arg1"` or `"lowerCase"` will result in an exception since these will become references instead of string literals. The arguments (everything after the colon) are parsed as one JSON array. This means literal values like `true`, `false` and `null` are allowed and strings are surrounded by double quotes. Use standard HTML attribute escaping with %34 for a double and %39 for a single quote if both are needed in the same filter in an attribute.
 
-<a name="selection_template" href="#selection_template">#</a> <i>selection</i>.<b>template</b>(<i>[options]</i>) [<>](http://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L30)
+<a name="selection_template" href="#selection_template">#</a> <i>selection</i>.<b>template</b>(<i>[options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L30)
 
 Creates a template from this *selection*. The following are all equivalent:
 
@@ -225,7 +225,7 @@ Creates a template from this *selection*. The following are all equivalent:
     selection.template(options);
     selection.call(d3.template, options)
 
-<a name="selection_render" href="#selection_render">#</a> <i>selection</i>.<b>render</b>(<i>data[, options]</i>) [<>](http://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L62)
+<a name="selection_render" href="#selection_render">#</a> <i>selection</i>.<b>render</b>(<i>data[, options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L62)
 
 Renders *data* onto this *selection*. (See also [d3.render](#render)) The following are all equivalent:
 
@@ -233,7 +233,7 @@ Renders *data* onto this *selection*. (See also [d3.render](#render)) The follow
     selection.render(data);
     selection.call(d3.render, data);
 
-<a name="transition_render" href="#transition_render">#</a> <i>transition</i>.<b>render</b>(<i>data[, options]</i>) [<>](http://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L62)
+<a name="transition_render" href="#transition_render">#</a> <i>transition</i>.<b>render</b>(<i>data[, options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L62)
 
 To render data onto a selection using a transaction use the following approach:
 
