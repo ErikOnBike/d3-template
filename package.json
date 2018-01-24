@@ -6,7 +6,8 @@
     "d3",
     "d3-plugin",
     "d3-template",
-    "template"
+    "template",
+    "d3-module"
   ],
   "homepage": "https://github.com/ErikOnBike/d3-template.git",
   "license": "BSD-3-Clause",
