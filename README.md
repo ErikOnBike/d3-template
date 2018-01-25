@@ -177,7 +177,9 @@ The following known *limitations* are present:
 
 ## Installing
 
-TODO: add npm package
+To install via npm use `npm install d3-template-plugin`. Or install using unpkg.
+
+    <script src="https://unpkg.com/d3-template-plugin/build/d3-template.min.js"></script>
 
 ## API Reference
 
