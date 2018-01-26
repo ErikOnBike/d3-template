@@ -1,7 +1,8 @@
 import {select,matcher} from "d3-selection";
 
 // Constants
-var FIELD_SELECTOR_REG_EX = /^(#index|#position|#length|[^|]+)\s*(\|\s*([a-zA-Z0-9\-_\.]+)\s*(:\s*(.*))?)?$/u;
+var FIELD_SELECTOR_REG_EX = /^([^|]+)\s*(\|\s*([a-zA-Z0-9\-_\.]+)\s*(:\s*(.*))?)?$/u;
+var REPEAT_GROUP_INFO = "__repeatGroupInfo";
 
 // Globals
 var namedRenderFilters = {};
@@ -144,10 +145,19 @@ GroupRenderer.prototype.render = function(templateElement, transition) {
 	;
 
 	// Make data same for all children of the new elements
-	newElements.each(function() {
+	newElements.each(function(d, i, nodes) {
 		var newElement = select(this);
 		var data = newElement.datum();	// New elements receive data in root by enter/append above
 		copyDataToChildren(data, newElement);
+
+		// Copy repeat data onto element
+		if(self.isRepeat()) {
+			this[REPEAT_GROUP_INFO] = {
+				index: i,
+				position: i + 1,
+				length: nodes.length
+			};
+		}
 	});
 
 	// Add event handlers to new elements
@@ -183,6 +193,10 @@ GroupRenderer.prototype.addRenderer = function(renderer) {
 	this.renderers.push(renderer);
 };
 
+// Answer whether group renderer is RepeatRenderer
+GroupRenderer.prototype.isRepeat = function() {
+	return false;
+};
 
 // RepeatRenderer - Renders data to a repeating group of elements
 export function RepeatRenderer(fieldSelector, elementSelector, childElement) {
@@ -191,6 +205,25 @@ export function RepeatRenderer(fieldSelector, elementSelector, childElement) {
 
 RepeatRenderer.prototype = Object.create(GroupRenderer.prototype);
 RepeatRenderer.prototype.constructor = RepeatRenderer;
+
+// Answer whether group renderer is RepeatRenderer
+RepeatRenderer.prototype.isRepeat = function() {
+	return true;
+};
+
+// Answer specified repeat group property
+RepeatRenderer.getProperty = function(node, property) {
+
+	// Find the property by walking up the parent chain until found
+	while(node) {
+		if(node[REPEAT_GROUP_INFO]) {
+			return node[REPEAT_GROUP_INFO][property];
+		}
+		node = node.parentNode;
+	}
+
+	return -1;
+};
 
 // IfRenderer - Renders data to a conditional group of elements
 export function IfRenderer(fieldSelector, elementSelector, childElement) {
@@ -241,13 +274,7 @@ function applyEventHandlers(eventHandlers, selection) {
 
 // Answer a d3 data function for specified field selector
 function createDataFunction(fieldSelector) {
-	if(fieldSelector === "#length") {
-		return function(d, i, nodes) { return nodes.length; };
-	} else if(fieldSelector === "#index") {
-		return function(d, i) { return i; };
-	} else if(fieldSelector === "#position") {
-		return function(d, i) { return i + 1; };
-	} else if(fieldSelector === ".") {
+	if(fieldSelector === ".") {
 		return function(d) { return d; };
 	} else {
 		return function(d) {

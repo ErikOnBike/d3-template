@@ -1,7 +1,7 @@
 import {format as numberFormat} from "d3-format";
 import {timeFormat} from "d3-time-format";
 import {shuffle} from "d3-array";
-import {renderFilter} from "./renderer";
+import {renderFilter, RepeatRenderer} from "./renderer";
 
 var defaultFilters = {
 
@@ -35,7 +35,10 @@ var defaultFilters = {
 	unit: function(value, unit) { return value + unit; },	// Actually just a postfix here
 	color2rgb: function(value) { return value.toString(); },
 
-	noop: function(value) { return value; }
+	// Repeat group filters
+	repeatIndex: function() { return RepeatRenderer.getProperty(this, "index"); },
+	repeatPosition: function() { return RepeatRenderer.getProperty(this, "position"); },
+	repeatLength: function() { return RepeatRenderer.getProperty(this, "length"); }
 };
 
 // Register the default filters
