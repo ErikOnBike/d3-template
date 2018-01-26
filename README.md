@@ -92,6 +92,12 @@ The general usage is probably best described by an example:
 
 When rendering data onto a template which is already rendered, the new data will be bound and elements will be updated accordingly.
 
+## <a name="Installing">Installing</a>
+
+To install via [NPM](https://www.npmjs.com) use `npm install d3-template-plugin`. Or install using [unpkg](https://unpkg.com/).
+
+    <script src="https://unpkg.com/d3-template-plugin/build/d3-template.min.js"></script>
+
 ## <a name="Features">Features</a>
 
 The following *features* are present:
@@ -184,12 +190,6 @@ The following known *limitations* are present:
 
 * Currently only a single filter can be applied. By creating a custom filter more elaborate functionality is possible to reach the same effect.
 * No support for the 'import' of a template within another template yet.
-
-## <a name="Installing">Installing</a>
-
-To install via [NPM](https://www.npmjs.com) use `npm install d3-template-plugin`. Or install using [unpkg](https://unpkg.com/).
-
-    <script src="https://unpkg.com/d3-template-plugin/build/d3-template.min.js"></script>
 
 ## <a name="API-Reference">API Reference</a>
 
