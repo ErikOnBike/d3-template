@@ -313,23 +313,37 @@ Repeating groups can only be applied on arrays. The array will be bound to the e
         list.render([]);
     </script>
 
+Inside a repeating group 3 special fields are available. These can be used like regular fields and filters can be applied.
+
+  |Field|Value|
+  |-----|-----|
+  |`#index`|Index within the group (starts at 0)|
+  |`#position`|Position within the group (starts at 1)|
+  |`#length`|The amount of elements in the group|
+
+An example:
+
+    <div data-repeat="{{.}}">
+        <div><span>{{#position}}</span> / <span>{{#length}}</span> - <span>{{value}}</span></div>
+    </div>
+
 ### <a name="Event-handlers">Event handlers</a>
 
 If event handlers are applied to a selection before a template is being created from it, these event handlers will be applied to the rendered result as well. When an event handler is called it will receive the normal D3 style arguments `d, i, nodes` and `this` will be set to the node receiving the event.
 
-    <ul id="other-list" data-repeat="{{.}}">
+    <ul id="lang-list" data-repeat="{{.}}">
         <li>{{english}}</li>
     </ul>
     <script>
-        var list = d3.select("#other-list");
+        var list = d3.select("#lang-list");
 
         // Add event handler
         list.select("li").on("click", function(d) {
-		window.alert(d.english + " translates into " + d.dutch + " for the Dutch language");
+		window.alert("'" + d.english + "' translates into '" + d.dutch + "' for the Dutch language");
         });
         
         // Create template now that the event handlers are applied
-	list.template();
+        list.template();
 
         // Render words
         var words = [
