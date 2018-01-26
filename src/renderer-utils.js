@@ -9,6 +9,7 @@ var defaultFilters = {
 	"default": function(value, defaultValue) { return value === null || value === undefined ? defaultValue : value; },
 	"emptyDefault": function(value, defaultValue) { return !value || value.length === 0 ? defaultValue : value; },
 	equals: function(value, otherValue) { return value === otherValue; },
+	length: function(value) { return value ? value.length : 0; },
 
 	// String filters
 	upper: function(value) { return (value || "").toLocaleUpperCase(); },
