@@ -287,6 +287,10 @@ The following list shows the standard render filters available. For usage see [r
   | *Unit and conversion filters* ||
   | **unit**: *unit* | Answer the data (numeric) and *unit* concatenated as a string |
   | **color2rgb** | Answer the data (a [d3.color](https://github.com/d3/d3-color#color)) as a rgb string "ie rgb(127, 0, 255)" |
+  | *<a name="Repeat-group-filters">Repeat group filters</a>* ||
+  | **repeatIndex** | Answer the index (starts at 0) of the current element within the enclosing repeat group (filter data is ignored) |
+  | **repeatPosition** | Answer the position (starts at 1) of the current element within the enclosing repeat group (filter data is ignored) |
+  | **repeatLength** | Answer the length of the enclosing repeat group (filter data is ignored) |
 
 The *sortFields* argument for the **sort** field should be a string with comma separated list of field names. Each name can be prepended by `-` or `+` to indicate descending or ascending order (with ascending as default if none specified). Fields should be singular. It is currently not possible to specify "address.street" to access the field "street" of the address instance.
 
@@ -313,19 +317,12 @@ Repeating groups can only be applied on arrays. The array will be bound to the e
         list.render([]);
     </script>
 
-Inside a repeating group 3 special fields are available. These can be used like regular fields and filters can be applied.
+To use the index, position or length of the repeat group, use the special [repeat group filters](#Repeat-group-filters).
 
-  |Field|Value|
-  |-----|-----|
-  |`#index`|Index within the group (starts at 0)|
-  |`#position`|Position within the group (starts at 1)|
-  |`#length`|The amount of elements in the group|
-
-An example:
-
-    <div data-repeat="{{.}}">
-        <div><span>{{#position}}</span> / <span>{{#length}}</span> - <span>{{value}}</span></div>
-    </div>
+    <!-- Insert index and position of element within repeat group using special filters -->
+    <ul data-repeat="{{.}}">
+        <li data-index="{{.|repeatIndex}}"><span>{{.|repeatPosition}}</span> - <span>{{.}}</span></li>
+    </ul>
 
 ### <a name="Event-handlers">Event handlers</a>
 
