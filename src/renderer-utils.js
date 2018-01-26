@@ -1,17 +1,18 @@
 import {format as numberFormat} from "d3-format";
 import {timeFormat} from "d3-time-format";
 import {shuffle} from "d3-array";
-import {renderFilter} from "./renderer";
+import {renderFilter, RepeatRenderer} from "./renderer";
 
 var defaultFilters = {
 
 	// Generic filters
 	"default": function(value, defaultValue) { return value === null || value === undefined ? defaultValue : value; },
-	"empty-default": function(value, defaultValue) { return !value || value.length === 0 ? defaultValue : value; },
+	"emptyDefault": function(value, defaultValue) { return !value || value.length === 0 ? defaultValue : value; },
+	equals: function(value, otherValue) { return value === otherValue; },
 
 	// String filters
-	upper: function(value) { return (value || "").toUpperCase(); },
-	lower: function(value) { return (value || "").toLowerCase(); },
+	upper: function(value) { return (value || "").toLocaleUpperCase(); },
+	lower: function(value) { return (value || "").toLocaleLowerCase(); },
 	prefix: function(value, prefix) { return "" + prefix + value; },
 	postfix: function(value, postfix) { return "" + value + postfix; },
 	substr: function(value, from, length) { return (value || "").substr(from, length); },
@@ -24,7 +25,6 @@ var defaultFilters = {
 
 	// Boolean filters
 	not: function(value) { return !value; },
-	equals: function(value, otherValue) { return value === otherValue; },
 
 	// Array filters
 	subarr: function(value, from, length) { return value.slice(from, length === undefined ? undefined : from + length + (from < 0 ? value.length : 0)); },
@@ -35,7 +35,10 @@ var defaultFilters = {
 	unit: function(value, unit) { return value + unit; },	// Actually just a postfix here
 	color2rgb: function(value) { return value.toString(); },
 
-	noop: function(value) { return value; }
+	// Repeat group filters
+	repeatIndex: function() { return RepeatRenderer.getProperty(this, "index"); },
+	repeatPosition: function() { return RepeatRenderer.getProperty(this, "position"); },
+	repeatLength: function() { return RepeatRenderer.getProperty(this, "length"); }
 };
 
 // Register the default filters

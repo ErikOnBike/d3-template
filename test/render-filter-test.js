@@ -8,12 +8,12 @@ tape("renderFilter() generics", function(test) {
 	test.equal(renderFilter("default")(false, "def"), false, "Default for false (gives false)");
 	test.equal(renderFilter("default")(0, "def"), 0, "Default for 0 (gives 0)");
 	test.equal(renderFilter("default")("", "def"), "", "Default for \"\" (gives \"\")");
-	test.equal(renderFilter("empty-default")("value", "def"), "value", "Filter empty-default with value");
-	test.equal(renderFilter("empty-default")("", "def"), "def", "Filter empty-default without value");
-	test.deepEqual(renderFilter("empty-default")([ 1 ], [ 1, 2 ]), [ 1 ], "Filter empty-default with value");
-	test.deepEqual(renderFilter("empty-default")([], [ 1, 2 ]), [ 1, 2 ], "Filter empty-default without value");
-	test.deepEqual(renderFilter("empty-default")(0, 42), 42, "Filter empty-default without value");
-	test.deepEqual(renderFilter("empty-default")(3, 42), 3, "Filter empty-default without value");
+	test.equal(renderFilter("emptyDefault")("value", "def"), "value", "Filter emptyDefault with value");
+	test.equal(renderFilter("emptyDefault")("", "def"), "def", "Filter emptyDefault without value");
+	test.deepEqual(renderFilter("emptyDefault")([ 1 ], [ 1, 2 ]), [ 1 ], "Filter emptyDefault with value");
+	test.deepEqual(renderFilter("emptyDefault")([], [ 1, 2 ]), [ 1, 2 ], "Filter emptyDefault without value");
+	test.deepEqual(renderFilter("emptyDefault")(0, 42), 42, "Filter emptyDefault without value");
+	test.deepEqual(renderFilter("emptyDefault")(3, 42), 3, "Filter emptyDefault without value");
 	test.end();
 });
 
@@ -135,13 +135,6 @@ tape("renderFilter() on unit and conversion filters", function(test) {
 	test.equal(renderFilter("unit")(3, "px"), "3px", "Filter unit for px");
 	test.equal(renderFilter("unit")(50, "%"), "50%", "Filter unit for percentage");
 	test.equal(renderFilter("color2rgb")(d3.color("red")), "rgb(255, 0, 0)", "Filter convert color 2 rgb");
-	test.end();
-});
-
-tape("renderFilter() noop (convenience)", function(test) {
-	test.equal(renderFilter("noop")(3), 3, "Filter noop numeric");
-	test.equal(renderFilter("noop")("Hello"), "Hello", "Filter noop string");
-	test.deepEqual(renderFilter("noop")([1, 2, 3]), [1, 2, 3], "Filter noop array");
 	test.end();
 });
 

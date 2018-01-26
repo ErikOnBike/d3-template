@@ -6,7 +6,17 @@ d3-template is a D3 plugin to support templates using D3's data binding mechanis
 
 If you are looking for existing templating support like Handlebars, Mustache or Nunjucks have a look at [d3-templating](https://github.com/jkutianski/d3-templating).
 
-## Usage
+The following information is available:
+* [Usage](#Usage)
+* [Installing](#Installing)
+* [Features](#Features)
+* [Limitations](#Limitations)
+* [API Reference](#API-Reference)
+* [Render filters](#Render-filters)
+* [Repeating groups](#Repeating-groups)
+* [Event handlers](#Event-handlers)
+
+## <a name="Usage">Usage</a>
 
 Templates look like they do in most other templating tools: add references to data by placing them within curly braces. Standard as well as custom filters are supported.
 
@@ -82,7 +92,13 @@ The general usage is probably best described by an example:
 
 When rendering data onto a template which is already rendered, the new data will be bound and elements will be updated accordingly.
 
-## Features
+## <a name="Installing">Installing</a>
+
+To install via [NPM](https://www.npmjs.com) use `npm install d3-template-plugin`. Or install using [unpkg](https://unpkg.com/).
+
+    <script src="https://unpkg.com/d3-template-plugin/build/d3-template.min.js"></script>
+
+## <a name="Features">Features</a>
 
 The following *features* are present:
 * Data rendering onto attributes and text directly.
@@ -121,7 +137,7 @@ The following *features* are present:
     ;
     ```
 
-## Limitations
+## <a name="Limitations">Limitations</a>
 
 The following known *limitations* are present:
 * Data references (the curly braces) can only be applied to the full element or the full attribute value. Filters can be used to format fields within a given text. (For completeness: Surrounding whitespace is allowed for elements or attributes, but will be removed.)
@@ -175,13 +191,7 @@ The following known *limitations* are present:
 * Currently only a single filter can be applied. By creating a custom filter more elaborate functionality is possible to reach the same effect.
 * No support for the 'import' of a template within another template yet.
 
-## Installing
-
-To install via npm use `npm install d3-template-plugin`. Or install using unpkg.
-
-    <script src="https://unpkg.com/d3-template-plugin/build/d3-template.min.js"></script>
-
-## API Reference
+## <a name="API-Reference">API Reference</a>
 
 <a name="template" href="#template">#</a> d3.<b>template</b>(<i>selection[, options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L25)
 
@@ -204,7 +214,7 @@ Renders *data* onto the specified *selection*. If the `elementSelectorAttribute`
 
 Retrieve or register a render filter for the specified *name*. If *filterFunc* is not specified the current filter named *name* is returned. If *filterFunc* is `null` an already registered filter for *name* is removed. If *filterFunc* is a function it is registered under *name* possibly replacing an existing filter. If *filterFunc* is not a function (nor null) an exception is thrown.
 
-The filter function *filterFunc* is called during rendering with the data bound to the element being rendered. Arguments can be specified in the template. These will be passed to the *filterFunc* as well. The function should return the filtered result.
+The filter function *filterFunc* is called during rendering with the data bound to the element being rendered and `this` set to the node being rendered. Arguments can be specified in the template. These will be passed to the *filterFunc* as well. The function should return the filtered result.
 
     <div>{{value|filter: "arg1", 2, { "lowerCase": true }}}</div>
     <script>
@@ -249,7 +259,45 @@ To render data onto a selection using a transaction use the following approach:
             })
     ;
 
-### Repeating groups
+### <a name="Render-filters">Render filters</a>
+The following list shows the standard render filters available. For usage see [renderFilter](#renderFilter).
+
+  | Filter | Usage |
+  ---------|-------|
+  | *Generic filters* | *Data can be of any type* |
+  | **default**: *defaultValue* | Answer *defaultValue* if the data is `null` or `undefined`, otherwise data itself |
+  | **emptyDefault**: *defaultValue* | Answer *defaultValue* if the data is falsy or has length 0, otherwise data itself |
+  | **equals**: *otherValue* | Answer a boolean as the result of comparing data with *otherValue* using `===` |
+  | *String filters* | *Data must be a [String](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)* |
+  | **upper** | Answer the data converted to uppercase using [toLocaleUpperCase](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/toLocaleUpperCase) |
+  | **lower** | Answer the data converted to lowercase using [toLocaleLowerCase](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/toLocaleLowerCase) |
+  | **prefix**: *prefix* | Answer *prefix* and the data concatenated as a string |
+  | **postfix**: *postfix* | Answer the data and *postfix* concatenated as a string |
+  | **substr**: *from\[, length \]* | Answer the substring of data using [substr](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/substr) |
+  | *Numeric filters* | *Data must be a number* |
+  | **numberFormat**: *specifier* | Answer the data formatted using [*specifier*](https://github.com/d3/d3-format#locale_format) |
+  | *Date/time filters* | *Data must be a [Date](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date)* |
+  | **timeFormat**: *specifier* | Answer the data formatted using [*specifier*](https://github.com/d3/d3-time-format#locale_format) |
+  | *Boolean filters* | *Data must be a boolean* |
+  | **not** | Answer the negation of data |
+  | *Array filters* | *Data must be an [Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)* |
+  | **subarr**: *from\[, length \]* | Answer the subarray of data similar to **substr** filter above |
+  | **sort**: *sortFields* | Answer data sorted as specified by [*sortFields*](#sortFields) |
+  | **shuffle** | Answer data in random order |
+  | *Unit and conversion filters* ||
+  | **unit**: *unit* | Answer the data (numeric) and *unit* concatenated as a string |
+  | **color2rgb** | Answer the data (a [d3.color](https://github.com/d3/d3-color#color)) as a rgb string "ie rgb(127, 0, 255)" |
+  | *<a name="Repeat-group-filters">Repeat group filters</a>* ||
+  | **repeatIndex** | Answer the index (starts at 0) of the current element within the enclosing repeat group (filter data is ignored) |
+  | **repeatPosition** | Answer the position (starts at 1) of the current element within the enclosing repeat group (filter data is ignored) |
+  | **repeatLength** | Answer the length of the enclosing repeat group (filter data is ignored) |
+
+The *sortFields* argument for the **sort** field should be a string with comma separated list of field names. Each name can be prepended by `-` or `+` to indicate descending or ascending order (with ascending as default if none specified). Fields should be singular. It is currently not possible to specify "address.street" to access the field "street" of the address instance.
+
+    <!-- Sort by last name (ascending) and birth date (descending, ie youngest first) -->
+    <ul data-repeat='{{.|sort: "lastName,-birthDate"}}'>
+
+### <a name="Repeating-groups">Repeating groups</a>
 
 Repeating groups can only be applied on arrays. The array will be bound to the element when rendered. The group's child element will be appended conform the regular D3 enter/exit pattern. A copy of the child element will be rendered for every array element provided.
 
@@ -269,23 +317,30 @@ Repeating groups can only be applied on arrays. The array will be bound to the e
         list.render([]);
     </script>
 
-### Event handlers
+To use the index, position or length of the repeat group, use the special [repeat group filters](#Repeat-group-filters).
+
+    <!-- Insert index and position of element within repeat group using special filters -->
+    <ul data-repeat="{{.}}">
+        <li data-index="{{.|repeatIndex}}"><span>{{.|repeatPosition}}</span> - <span>{{.}}</span></li>
+    </ul>
+
+### <a name="Event-handlers">Event handlers</a>
 
 If event handlers are applied to a selection before a template is being created from it, these event handlers will be applied to the rendered result as well. When an event handler is called it will receive the normal D3 style arguments `d, i, nodes` and `this` will be set to the node receiving the event.
 
-    <ul id="other-list" data-repeat="{{.}}">
+    <ul id="lang-list" data-repeat="{{.}}">
         <li>{{english}}</li>
     </ul>
     <script>
-        var list = d3.select("#other-list");
+        var list = d3.select("#lang-list");
 
         // Add event handler
         list.select("li").on("click", function(d) {
-		window.alert(d.english + " translates into " + d.dutch + " for the Dutch language");
+		window.alert("'" + d.english + "' translates into '" + d.dutch + "' for the Dutch language");
         });
         
         // Create template now that the event handlers are applied
-	list.template();
+        list.template();
 
         // Render words
         var words = [
