@@ -214,7 +214,7 @@ Renders *data* onto the specified *selection*. If the `elementSelectorAttribute`
 
 Retrieve or register a render filter for the specified *name*. If *filterFunc* is not specified the current filter named *name* is returned. If *filterFunc* is `null` an already registered filter for *name* is removed. If *filterFunc* is a function it is registered under *name* possibly replacing an existing filter. If *filterFunc* is not a function (nor null) an exception is thrown.
 
-The filter function *filterFunc* is called during rendering with the data bound to the element being rendered. Arguments can be specified in the template. These will be passed to the *filterFunc* as well. The function should return the filtered result.
+The filter function *filterFunc* is called during rendering with the data bound to the element being rendered and `this` set to the node being rendered. Arguments can be specified in the template. These will be passed to the *filterFunc* as well. The function should return the filtered result.
 
     <div>{{value|filter: "arg1", 2, { "lowerCase": true }}}</div>
     <script>
