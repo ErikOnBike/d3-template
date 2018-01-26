@@ -7,11 +7,12 @@ var defaultFilters = {
 
 	// Generic filters
 	"default": function(value, defaultValue) { return value === null || value === undefined ? defaultValue : value; },
-	"empty-default": function(value, defaultValue) { return !value || value.length === 0 ? defaultValue : value; },
+	"emptyDefault": function(value, defaultValue) { return !value || value.length === 0 ? defaultValue : value; },
+	equals: function(value, otherValue) { return value === otherValue; },
 
 	// String filters
-	upper: function(value) { return (value || "").toUpperCase(); },
-	lower: function(value) { return (value || "").toLowerCase(); },
+	upper: function(value) { return (value || "").toLocaleUpperCase(); },
+	lower: function(value) { return (value || "").toLocaleLowerCase(); },
 	prefix: function(value, prefix) { return "" + prefix + value; },
 	postfix: function(value, postfix) { return "" + value + postfix; },
 	substr: function(value, from, length) { return (value || "").substr(from, length); },
@@ -24,7 +25,6 @@ var defaultFilters = {
 
 	// Boolean filters
 	not: function(value) { return !value; },
-	equals: function(value, otherValue) { return value === otherValue; },
 
 	// Array filters
 	subarr: function(value, from, length) { return value.slice(from, length === undefined ? undefined : from + length + (from < 0 ? value.length : 0)); },
