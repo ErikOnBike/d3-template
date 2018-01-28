@@ -15,6 +15,7 @@ The following information is available:
 * [Render filters](#Render-filters)
 * [Repeating groups](#Repeating-groups)
 * [Event handlers](#Event-handlers)
+* [Examples](examples/README.md)
 
 ## <a name="Usage">Usage</a>
 
