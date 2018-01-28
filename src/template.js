@@ -1,5 +1,5 @@
 import {select} from "d3-selection";
-import {RepeatRenderer, IfRenderer, WithRenderer, AttributeRenderer, StyleRenderer, TextRenderer} from "./renderer";
+import {GroupRenderer, RepeatRenderer, IfRenderer, WithRenderer, AttributeRenderer, StyleRenderer, TextRenderer} from "./renderer";
 
 // Defaults
 var defaults = {
@@ -90,9 +90,7 @@ function Template(options) {
 }
 
 // Add renderers
-Template.prototype.addRenderer = function(renderer) {
-	this.renderers.push(renderer);
-};
+Template.prototype.addRenderer = GroupRenderer.prototype.addRenderer;
 
 // Render data on specified template element
 Template.prototype.render = function(data, element, transition) {

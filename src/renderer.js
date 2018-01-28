@@ -64,6 +64,26 @@ Renderer.prototype.getFilteredData = function() {
 	return this.data;
 }
 
+// Answer whether receiver is AttributeRenderer
+Renderer.prototype.isAttributeRenderer = function() {
+	return false;
+};
+
+// Answer whether receiver is StyleRenderer
+Renderer.prototype.isStyleRenderer = function() {
+	return false;
+};
+
+// Answer whether receiver is GroupRenderer
+Renderer.prototype.isGroupRenderer = function() {
+	return false;
+};
+
+// Answer whether receiver is RepeatRenderer
+Renderer.prototype.isRepeatRenderer = function() {
+	return false;
+};
+
 // TextRenderer - Renders data as text of element
 export function TextRenderer(fieldSelector, elementSelector) {
 	Renderer.call(this, fieldSelector, elementSelector);
@@ -97,7 +117,12 @@ AttributeRenderer.prototype.render = function(templateElement, transition) {
 	this.getElement(templateElement).attr(this.attribute, this.getFilteredData());
 };
 
-// StyleRenderer - Renders data as attribute of element
+// Answer whether receiver is AttributeRenderer
+AttributeRenderer.prototype.isAttributeRenderer = function() {
+	return true;
+};
+
+// StyleRenderer - Renders data as style of element
 export function StyleRenderer(fieldSelector, elementSelector, style) {
 	Renderer.call(this, fieldSelector, elementSelector);
 	this.style = style;
@@ -112,6 +137,11 @@ StyleRenderer.prototype.render = function(templateElement, transition) {
 		templateElement = templateElement.transition(transition);
 	}
 	this.getElement(templateElement).style(this.style, this.getFilteredData());
+};
+
+// Answer whether receiver is StyleRenderer
+StyleRenderer.prototype.isStyleRenderer = function() {
+	return true;
 };
 
 // GroupRenderer - Renders data to a repeating group of elements
@@ -151,7 +181,7 @@ GroupRenderer.prototype.render = function(templateElement, transition) {
 		copyDataToChildren(data, newElement);
 
 		// Copy repeat data onto element
-		if(self.isRepeat()) {
+		if(self.isRepeatRenderer()) {
 			this[REPEAT_GROUP_INFO] = {
 				index: i,
 				position: i + 1,
@@ -190,12 +220,38 @@ GroupRenderer.prototype.addEventHandlers = function(selector, eventHandlers) {
 
 // Add renderers for child elements to the receiver
 GroupRenderer.prototype.addRenderer = function(renderer) {
-	this.renderers.push(renderer);
+
+	// Append group renderers in order received, but insert attribute or style renderers (on the same element)
+	// This allows filters on repeat elements to use the attribute or style values which are also be rendered
+	if(renderer.isAttributeRenderer() || renderer.isStyleRenderer()) {
+
+		// Find first group renderer which will render on the same element
+		var firstGroupRendererIndex = -1;
+		var currentIndex = this.renderers.length - 1;
+		var isGroupRendererOnSameElement = function(currentRenderer) {
+			return currentRenderer.elementSelector === renderer.elementSelector &&
+				currentRenderer.isGroupRenderer()
+			;
+		};
+		while(currentIndex >= 0 && isGroupRendererOnSameElement(this.renderers[currentIndex])) {
+			firstGroupRendererIndex = currentIndex;
+			currentIndex--;
+		}
+
+		// If such group renderer is found, insert (attr/style) renderer before (otherwise append)
+		if(firstGroupRendererIndex >= 0) {
+			this.renderers.splice(firstGroupRendererIndex, 0, renderer);
+		} else {
+			this.renderers.push(renderer);
+		}
+	} else {
+		this.renderers.push(renderer);
+	}
 };
 
-// Answer whether group renderer is RepeatRenderer
-GroupRenderer.prototype.isRepeat = function() {
-	return false;
+// Answer whether receiver is GroupRenderer
+GroupRenderer.prototype.isGroupRenderer = function() {
+	return true;
 };
 
 // RepeatRenderer - Renders data to a repeating group of elements
@@ -207,7 +263,7 @@ RepeatRenderer.prototype = Object.create(GroupRenderer.prototype);
 RepeatRenderer.prototype.constructor = RepeatRenderer;
 
 // Answer whether group renderer is RepeatRenderer
-RepeatRenderer.prototype.isRepeat = function() {
+RepeatRenderer.prototype.isRepeatRenderer = function() {
 	return true;
 };
 
