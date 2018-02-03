@@ -120,7 +120,7 @@ The following *features* are present:
 * Custom filters can be added by calling:
 
     ```Javascript
-    d3.renderFilter(name, function(value[, parameters ]) { return /* ...your code here... */; });
+    d3.renderFilter(name, function(value[, parameters ], i, nodes) { return /* ...your code here... */; });
     ```
 
 * Event handlers added onto elements before the template was created (using `selection.on()`), will be (re)applied when rendering the template. The normal D3-style event handler arguments are passed when the handlers are called (ie `d, i, nodes` and `this` is set to the node receiving the event).
@@ -215,7 +215,7 @@ Renders *data* onto the specified *selection*. If the `elementSelectorAttribute`
 
 Retrieve or register a render filter for the specified *name*. If *filterFunc* is not specified the current filter named *name* is returned. If *filterFunc* is `null` an already registered filter for *name* is removed. If *filterFunc* is a function it is registered under *name* possibly replacing an existing filter. If *filterFunc* is not a function (nor null) an exception is thrown.
 
-The filter function *filterFunc* is called during rendering with the data bound to the element being rendered and `this` set to the node being rendered. Arguments can be specified in the template. These will be passed to the *filterFunc* as well. The function should return the filtered result.
+The filter function *filterFunc* is called during rendering with the data bound to the element being rendered and `this` set to the node being rendered. Arguments can be specified in the template. These will be passed to the *filterFunc* as well. Also D3's typical `i` and `nodes` arguments are passed as the last two arguments in the function call. The function should return the filtered result.
 
     <div>{{value|filter: "arg1", 2, { "lowerCase": true }}}</div>
     <script>
