@@ -1,7 +1,7 @@
 import {format as numberFormat} from "d3-format";
 import {timeFormat} from "d3-time-format";
 import {shuffle} from "d3-array";
-import {renderFilter, RepeatRenderer} from "./renderer";
+import {renderFilter} from "./renderer";
 
 var defaultFilters = {
 
@@ -9,7 +9,7 @@ var defaultFilters = {
 	"default": function(value, defaultValue) { return value === null || value === undefined ? defaultValue : value; },
 	"emptyDefault": function(value, defaultValue) { return !value || value.length === 0 ? defaultValue : value; },
 	equals: function(value, otherValue) { return value === otherValue; },
-	length: function(value) { return value ? value.length : 0; },
+	length: function(value) { return value && value.length ? value.length : 0; },
 
 	// String filters
 	upper: function(value) { return (value || "").toLocaleUpperCase(); },
@@ -37,9 +37,9 @@ var defaultFilters = {
 	color2rgb: function(value) { return value.toString(); },
 
 	// Repeat group filters
-	repeatIndex: function() { return RepeatRenderer.getProperty(this, "index"); },
-	repeatPosition: function() { return RepeatRenderer.getProperty(this, "position"); },
-	repeatLength: function() { return RepeatRenderer.getProperty(this, "length"); }
+	repeatIndex: function(d, i) { return i; },
+	repeatPosition: function(d, i) { return i + 1; },
+	repeatLength: function(d, i, nodes) { return nodes.length; }
 };
 
 // Register the default filters

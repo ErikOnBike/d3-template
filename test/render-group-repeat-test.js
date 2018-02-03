@@ -189,6 +189,6 @@ tape("render() special repeat group filters without array", function(test) {
 	var selection = d3.select(node);
 	var data = "hello world";
 	selection.template().render(data);
-	test.equal(selection.attr("data-value"), "-1", "No repeat index on non-repeat template");
+	test.equal(selection.attr("data-value"), "0", "Repeat index 0 on non-repeat template");
 	test.end();
 });

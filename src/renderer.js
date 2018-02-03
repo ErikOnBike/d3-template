@@ -55,8 +55,11 @@ Renderer.prototype.getFilteredData = function() {
 		if(filter) {
 			var self = this;
 			var args = this.filterReference.args.slice(0);
+			args.splice(args.length, 0, null, null);	// Add args for i and nodes
 			return function(d, i, nodes) {
 				args[0] = self.data(d, i, nodes);
+				args[args.length - 2] = i;
+				args[args.length - 1] = nodes;
 				return filter.apply(this, args);
 			};
 		}
@@ -265,20 +268,6 @@ RepeatRenderer.prototype.constructor = RepeatRenderer;
 // Answer whether group renderer is RepeatRenderer
 RepeatRenderer.prototype.isRepeatRenderer = function() {
 	return true;
-};
-
-// Answer specified repeat group property
-RepeatRenderer.getProperty = function(node, property) {
-
-	// Find the property by walking up the parent chain until found
-	while(node) {
-		if(node[REPEAT_GROUP_INFO]) {
-			return node[REPEAT_GROUP_INFO][property];
-		}
-		node = node.parentNode;
-	}
-
-	return -1;
 };
 
 // IfRenderer - Renders data to a conditional group of elements

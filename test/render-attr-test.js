@@ -1,7 +1,6 @@
 var tape = require("tape");
 var jsdom = require("./jsdom");
-var d3 = Object.assign({}, require("d3-selection"));
-require("../");
+var d3 = Object.assign({}, require("d3-selection"), require("../"));
 
 tape("render() attribute on root element", function(test) {
 	var document = jsdom("<div data-value='{{field}}'></div>");
@@ -131,5 +130,17 @@ tape("render() attribute with unknown filter", function(test) {
 	var selection = d3.select(node);
 	selection.template().render("hello");
 	test.equal(selection.select("span").attr("data-value"), "hello", "Unknown filter has no effect.");
+	test.end();
+});
+
+tape("render() non-group with filter using i, nodes", function(test) {
+	var document = jsdom("<div><span data-value='{{.|extraParams}}'>Some text here</span></div>");
+	var node = document.querySelector("div");
+	var selection = d3.select(node);
+	d3.renderFilter("extraParams", function(d, i, nodes) {
+		return d + "," + i + "," + nodes.length;
+	});
+	selection.template().render("hello");
+	test.equal(selection.select("span").attr("data-value"), "hello,0,1", "Filter on non-group gives i and nodes.");
 	test.end();
 });
