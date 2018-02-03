@@ -97,6 +97,16 @@ tape("render() attribute rendered with nested object value with missing fields",
 	test.end();
 });
 
+tape("render() attribute with namespace", function(test) {
+	var document = jsdom("<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xyz=\"http://www.w3.org/1999/xlink\"><use xlink:data-attr-href='{{id|prefix: \"#\"}}'></use></svg>");
+	var node = document.querySelector("svg");
+	var selection = d3.select(node);
+	selection.template().render({ id: "ref_id" });
+	test.equal(d3.namespaces["xlink"], "http://www.w3.org/1999/xlink", "xlink namespace exists");
+	test.equal(selection.select("use").attr("xlink:href"), "#ref_id", "href with namespace");
+	test.end();
+});
+
 tape("render() attribute with filter", function(test) {
 	var document = jsdom("<div><span data-value='{{.|upper}}' data-value2='{{.|substr: 2, 2}}'>Some text here</span></div>");
 	var node = document.querySelector("div");
