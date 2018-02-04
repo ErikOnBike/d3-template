@@ -117,6 +117,15 @@ tape("render() attribute with filter", function(test) {
 	test.end();
 });
 
+tape("render() attribute with multiple filters", function(test) {
+	var document = jsdom("<div><span data-value='{{.|upper|prefix: \"x\"|postfix: \"y\"}}'>Some text here</span></div>");
+	var node = document.querySelector("div");
+	var selection = d3.select(node);
+	selection.template().render("Hello");
+	test.equal(selection.select("span").attr("data-value"), "xHELLOy", "Field to uppercase, prefixed and postfixed");
+	test.end();
+});
+
 tape("render() attribute with illegal filter", function(test) {
 	var document = jsdom("<div><span data-value='{{.|postfix: X}}'>Some text here</span></div>");
 	var node = document.querySelector("div");
@@ -129,8 +138,7 @@ tape("render() attribute with illegal filter", function(test) {
 	var document = jsdom("<div><span data-value='{{|. postfix: X}}'>Some text here</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
-	selection.template().render("hello");
-	test.equal(selection.select("span").attr("data-value"), null, "No attribute present");
+	test.throws(function() { selection.template(); }, /Can't parse filter arguments: /, "Illegal argument (missing quotes)");
 	test.end();
 });
 

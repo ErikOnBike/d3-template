@@ -1,7 +1,8 @@
 import {select,matcher} from "d3-selection";
 
 // Constants
-var FIELD_SELECTOR_REG_EX = /^([^|]+)\s*(\|\s*([a-zA-Z0-9\-_\.]+)\s*(:\s*(.*))?)?$/u;
+var FILTER_SEPARATOR = "|";
+var ARGUMENT_INDICATOR = ":";
 var REPEAT_GROUP_INFO = "__repeatGroupInfo";
 
 // Globals
@@ -24,12 +25,11 @@ export function renderFilter(name, filterFunc) {
 }
 
 // Renderer - Renders data on element
-function Renderer(fieldSelector, elementSelector) {
-	var trimmed = function(value) { return value ? value.trim() : value; };
-	var match = fieldSelector.match(FIELD_SELECTOR_REG_EX);
-	this.fieldSelector = match ? trimmed(match[1]) : fieldSelector;
+function Renderer(fieldSelectorAndFilters, elementSelector) {
+	var parsedFieldSelector = parseFieldSelector(fieldSelectorAndFilters);
+	this.fieldSelector = parsedFieldSelector.fieldSelector;
 	this.elementSelector = elementSelector;
-	this.filterReference = match ? createFilterReference(trimmed(match[3]), trimmed(match[5])) : null;
+	this.filterReferences = parsedFieldSelector.filterReferences;
 	this.data = createDataFunction(this.fieldSelector);
 }
 
@@ -48,20 +48,23 @@ Renderer.prototype.getElement = function(templateElement) {
 	return selection;
 };
 
-// Answer the data function of the receiver with the receivers filterReference applied (if applicable)
+// Answer the data function of the receiver with the receivers filterReferences applied (if applicable)
 Renderer.prototype.getFilteredData = function() {
-	if(this.filterReference) {
-		var filter = namedRenderFilters[this.filterReference.name];
-		if(filter) {
-			var self = this;
-			var args = this.filterReference.args.slice(0);
-			args.splice(args.length, 0, null, null);	// Add args for i and nodes
-			return function(d, i, nodes) {
-				args[0] = self.data(d, i, nodes);
-				args[args.length - 2] = i;
-				args[args.length - 1] = nodes;
-				return filter.apply(this, args);
-			};
+	if(this.filterReferences.length > 0) {
+		var self = this;
+		return function(d, i, nodes) {
+			var node = this;
+			return self.filterReferences.reduce(function(result, filterReference) {
+				var filter = namedRenderFilters[filterReference.name];
+				if(filter) {
+					var args = filterReference.args.slice(0);
+					args[0] = result;
+					args[args.length - 2] = i;
+					args[args.length - 1] = nodes;
+					return filter.apply(node, args);
+				}
+				return result;
+			}, self.data(d, i, nodes));
 		}
 	}
 	return this.data;
@@ -331,30 +334,110 @@ function createDataFunction(fieldSelector) {
 	}
 }
 
-// Create a filter reference consisting of 'name' and 'arguments' pair (to be used during rendering)
-function createFilterReference(name, argumentsString) {
-	if(!name) {
-		return null;
+// Parse a string with field selector and optional filters
+//	<fieldname>["."<fieldname>]* ["|" <filtername>[":" <argument>["," <argument>]* ] ]*
+//
+//	<argument> should be a JSON (parseable) literal
+//
+// Answered structure:
+//	{
+//		fieldSelector: <fieldSelector as string>,
+//		filterReferences: [
+//			{
+//				name: <filtername as string>,
+//				args: <arguments as array of literals>
+//			}
+//		]
+//	}
+//
+// The parsing is done extremely loosly with respect to allowed characters within names.
+// Only "|" and ":" are considered as special.
+function parseFieldSelector(fieldSelectorAndFilters) {
+
+	// Parse fieldname(s)
+	var filterSeparatorIndex = fieldSelectorAndFilters.indexOf(FILTER_SEPARATOR);
+	var result = {
+		fieldSelector: (filterSeparatorIndex >= 0 ?
+			fieldSelectorAndFilters.slice(0, filterSeparatorIndex) :
+			fieldSelectorAndFilters
+		),
+		filterReferences: []
+	};
+
+	// Parse filters
+	while(filterSeparatorIndex >= 0 && filterSeparatorIndex < fieldSelectorAndFilters.length) {
+		var nextFilterSeparatorIndex = fieldSelectorAndFilters.indexOf(FILTER_SEPARATOR, filterSeparatorIndex + 1);
+		var argumentIndicatorIndex = fieldSelectorAndFilters.indexOf(ARGUMENT_INDICATOR, filterSeparatorIndex + 1);
+
+		if(argumentIndicatorIndex >= 0 && (argumentIndicatorIndex < nextFilterSeparatorIndex || nextFilterSeparatorIndex < 0)) {
+
+			// Parse arguments until next filter (or end)
+			var argsParsed = parseArguments(fieldSelectorAndFilters, argumentIndicatorIndex + 1);
+			result.filterReferences.push({
+				name: fieldSelectorAndFilters.slice(filterSeparatorIndex + 1, argumentIndicatorIndex),
+				args: argsParsed.args
+			});
+
+			// Select next filter separator
+			filterSeparatorIndex = argsParsed.endIndex;
+		} else if(nextFilterSeparatorIndex >= 0) {
+
+			// Filter without arguments (another filter follows)
+			result.filterReferences.push({
+				name: fieldSelectorAndFilters.slice(filterSeparatorIndex + 1, nextFilterSeparatorIndex),
+				args: [ null, null, null ]	// d, i, nodes
+			});
+
+			// Select next filter separator
+			filterSeparatorIndex = nextFilterSeparatorIndex;
+		} else {
+
+			// Filter without arguments (nothing follows)
+			result.filterReferences.push({
+				name: fieldSelectorAndFilters.slice(filterSeparatorIndex + 1),
+				args: [ null, null, null ]	// d, i, nodes
+			});
+
+			// Select next filter separator
+			filterSeparatorIndex = -1;	// Done
+		}
 	}
 
-	// Parse arguments string into array of literal values (ie no references allowed)
+	return result;
+}
+
+function parseArguments(argumentsString, startIndex) {
+
+	// Parse until next filter separator (or end if none is present)
+	var nextFilterSeparatorIndex = argumentsString.indexOf(FILTER_SEPARATOR, startIndex);
+	if(nextFilterSeparatorIndex < 0) {
+		nextFilterSeparatorIndex = argumentsString.length;
+	}
+
+	// Filter separators may be part of a string, try next separators until successful
 	var args = null;
-	if(argumentsString) {
+	var lastParseException = null;
+	while(!args && nextFilterSeparatorIndex >= 0) {
 		try {
 
-			// Arguments prefixed by single null value which will be replaced by the data during rendering
-			args = JSON.parse("[null," + argumentsString + "]");
+			// Arguments turned into array of arguments (add d, i, nodes as null arguments. d at start, i and nodes at end)
+			args = JSON.parse("[ null, " + argumentsString.slice(startIndex, nextFilterSeparatorIndex) + ", null, null ]");
 		} catch(ex) {
-			throw new SyntaxError("Can't parse filter arguments: \"" + argumentsString + "\". Exception: " + ex.message);
+
+			// Invalid JSON string: try with next filter separator
+			nextFilterSeparatorIndex = argumentsString.indexOf(FILTER_SEPARATOR, nextFilterSeparatorIndex + 1);
+			lastParseException = ex;
 		}
-	} else {
-		args = [ null ];
 	}
 
-	// Answer filter pair
+	// Fail if no arguments found
+	if(!args) {
+		throw new SyntaxError("Can't parse filter arguments: \"" + argumentsString.slice(startIndex) + "\". Exception: " + lastParseException.message);
+	}
+
 	return {
-		name: name,
-		args: args
+		args: args,
+		endIndex: nextFilterSeparatorIndex
 	};
 }
 
