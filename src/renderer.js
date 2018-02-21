@@ -15,7 +15,7 @@ export function renderFilter(name, filterFunc) {
 			delete namedRenderFilters[name];
 		} else {
 			if(typeof filterFunc !== "function") {
-				throw "No function specified when registering renderFilter: " + name;
+				throw new Error("No function specified when registering renderFilter: " + name);
 			}
 			namedRenderFilters[name] = filterFunc;
 		}
