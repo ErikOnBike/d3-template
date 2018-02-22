@@ -22,7 +22,7 @@
     "url": "https://github.com/ErikOnBike/d3-template"
   },
   "scripts": {
-    "pretest": "rm -rf build && mkdir build && rollup -f umd -g d3-selection:d3,d3-transition:d3,d3-format:d3,d3-time-format:d3,d3-array:d3 -n d3 -o build/d3-template.js -- index.js",
+    "pretest": "rm -rf build && mkdir build && rollup -c",
     "test": "tape 'test/**/*-test.js' && eslint index.js src test",
     "prepublish": "npm run test && uglifyjs build/d3-template.js -c -m -o build/d3-template.min.js"
   },
@@ -31,15 +31,20 @@
     "d3-transition": "^1",
     "d3-format": "^1",
     "d3-time-format": "^2",
-    "d3-array": "^1"
+    "d3-array": "^1",
+    "state-based-string-parser": "^1",
+    "state-based-json-parser": "^1"
   },
   "devDependencies": {
     "d3-color": "^1.0.3",
     "eslint": "3",
     "jsdom": "11",
     "nyc": "^11.4.1",
-    "rollup": "0.41",
+    "rollup-plugin-node-resolve": "^3",
+    "rollup-plugin-commonjs": "^8",
+    "rollup": "^0",
     "tape": "4",
-    "uglify-js": "^2.8.11"
+    "uglify-js": "^2.8.11",
+    "node-es-module-loader": "^0.3"
   }
 }
