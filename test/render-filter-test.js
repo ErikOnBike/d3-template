@@ -22,6 +22,13 @@ tape("renderFilter() generics", function(test) {
 	test.equal(d3.renderFilter("length")("hello"), 5, "Length for string");
 	test.equal(d3.renderFilter("length")([ 1, 2, 3 ]), 3, "Length for array");
 	test.equal(d3.renderFilter("length")(true), 0, "Length on non string or array");
+	test.equal(d3.renderFilter("format")("Hello world", "{.}"), "Hello world", "Format with single field selectors");
+	test.equal(d3.renderFilter("format")("Hello world", "{.}{.|upper}{.|lower}"), "Hello worldHELLO WORLDhello world", "Format with single field selectors repeated 3 times with 2 filters");
+	test.equal(d3.renderFilter("format")({ "first": 1, "second": 2 }, "This is {first} and {second}"), "This is 1 and 2", "Format with two field selectors for integers");
+	test.equal(d3.renderFilter("format")({ "first": "Hello", "second": "World" }, "This is {first} and {second}"), "This is Hello and World", "Format with two field selectors for strings");
+	test.equal(d3.renderFilter("format")({ "first": "Hello", "second": "World" }, "This is {first|upper} and {second|lower}"), "This is HELLO and world", "Format with two field selectors and two single filters");
+	test.equal(d3.renderFilter("format")({ "first": "Hello", "second": "World" }, "This is {first|upper|prefix: \"a warm \"} and {second|lower|postfix: \".\"}"), "This is a warm HELLO and world.", "Format with two field selectors and two multi-filters");
+	test.equal(d3.renderFilter("format")("hello", "Word of the day: {.|format: \"(and today only) {.|upper}\"}."), "Word of the day: (and today only) HELLO.", "Nested format");
 	test.end();
 });
 

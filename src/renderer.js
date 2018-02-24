@@ -35,12 +35,6 @@ function Renderer(fieldSelectorAndFilters, elementSelector) {
 		throw new SyntaxError("Failed to parse field selector and/or filter: EXTRA_CHARACTERS");
 	}
 
-	// Append place holders to filter arguments
-	parseResult.value.filterReferences.forEach(function(filterReference) {
-		filterReference.args.splice(0, 0, null);	// this (prepend)
-		filterReference.args.push(null, null);		// i, nodes (append)
-	});
-
 	// Set instance variables
 	this.fieldSelectors = parseResult.value.fieldSelectors;
 	this.filterReferences = parseResult.value.filterReferences;
@@ -336,7 +330,7 @@ function applyEventHandlers(eventHandlers, selection) {
 }
 
 // Answer a d3 data function for specified field selector
-function createDataFunction(fieldSelectors) {
+export function createDataFunction(fieldSelectors) {
 	if(fieldSelectors[0] === ".") {
 		return function(d) { return d; };
 	} else {

@@ -142,6 +142,14 @@ tape("render() attribute with illegal filter", function(test) {
 	test.end();
 });
 
+tape("render() attribute with illegal filter", function(test) {
+	var document = jsdom("<div><span data-value='{{.|upper lower}}'>Some text here</span></div>");
+	var node = document.querySelector("div");
+	var selection = d3.select(node);
+	test.throws(function() { selection.template(); }, /EXTRA_CHARACTERS/, "Illegal argument (exta characters)");
+	test.end();
+});
+
 tape("render() attribute with unknown filter", function(test) {
 	var document = jsdom("<div><span data-value='{{.|supersonic}}'>Some text here</span></div>");
 	var node = document.querySelector("div");

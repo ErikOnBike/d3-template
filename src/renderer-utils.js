@@ -1,7 +1,8 @@
 import {format as numberFormat} from "d3-format";
 import {timeFormat} from "d3-time-format";
 import {shuffle} from "d3-array";
-import {renderFilter} from "./renderer";
+import {renderFilter, createDataFunction} from "./renderer";
+import {FieldParser} from "./field-parser";
 
 var defaultFilters = {
 
@@ -10,6 +11,7 @@ var defaultFilters = {
 	"emptyDefault": function(value, defaultValue) { return !value || value.length === 0 ? defaultValue : value; },
 	equals: function(value, otherValue) { return value === otherValue; },
 	length: function(value) { return value && value.length ? value.length : 0; },
+	format: formatValue,
 
 	// String filters
 	upper: function(value) { return (value || "").toLocaleUpperCase(); },
@@ -29,7 +31,7 @@ var defaultFilters = {
 
 	// Array filters
 	subarr: function(value, from, length) { return value.slice(from, length === undefined ? undefined : from + length + (from < 0 ? value.length : 0)); },
-	sort: function(value, sortFields) { return sortArray(value, sortFields); },
+	sort: sortArray,
 	shuffle: function(value) { return shuffle(value); },
 
 	// Unit and conversion filters
@@ -48,6 +50,75 @@ Object.keys(defaultFilters).forEach(function(filterName) {
 });
 
 // Helper functions
+
+// Answer value formatted according to format string
+var parsedFormatStringCache = {};
+function formatValue(value, formatString, i, nodes) {
+	var parsedFormatString = parsedFormatStringCache[formatString];
+	if(parsedFormatString === undefined) {
+		parsedFormatString = parsedFormatStringCache[formatString] = parseFormatString(formatString);
+	}
+
+	// Iteratively call all formatString parts (fixed string and field selectors with optional filters)
+	var node = this;
+	return parsedFormatString.reduce(function(result, formatStringPart) {
+		if(formatStringPart.dataFunction) {
+			var fieldValue = formatStringPart.filterReferences.reduce(function(result, filterReference) {
+				var filter = renderFilter(filterReference.name);
+				if(filter) {
+					var args = filterReference.args.slice(0);
+					args[0] = result;
+					args[args.length - 2] = i;
+					args[args.length - 1] = nodes;
+					return filter.apply(node, args);
+				}
+				return result;
+			}, formatStringPart.dataFunction(value));
+			return result + fieldValue;
+		}
+		return result + formatStringPart;
+	}, "");
+}
+
+// Answer a parsed format string
+// Will be array of strings and field selectors (with optional filters)
+var fieldParser = new FieldParser();
+function parseFormatString(formatString) {
+	var result = [];
+	var index = 0;
+	while(index < formatString.length) {
+		var templateIndex = formatString.indexOf("{", index);
+		if(templateIndex >= 0) {
+
+			// Append string
+			result.push(formatString.slice(index, templateIndex));
+
+			// Parse field selector with optional filters
+			var parseResult = fieldParser.parse(formatString, templateIndex + 1);
+			if(parseResult.value === undefined) {
+				throw new SyntaxError("Invalid format string in filter: " + parseResult.errorCode);
+			} else if(formatString.charAt(parseResult.index) !== "}") {
+				throw new SyntaxError("Invalid format string in filter: EXTRA_CHARACTERS");
+			}
+
+			// Append data function for field selector and filter references
+			result.push({
+				dataFunction: createDataFunction(parseResult.value.fieldSelectors),
+				filterReferences: parseResult.value.filterReferences
+			});
+
+			// Update index for further parsing (+ 1 to skip closing curly brace)
+			index = parseResult.index + 1;
+		} else {
+
+			// Add final string (no template follows)
+			result.push(formatString.slice(index));
+			index = formatString.length;
+		}
+	}
+
+	return result;
+}
 
 // Answer sorted array based on specified sort fields
 // (sortFieldsString should be comma separated list of field names, optionally prefixed with + or - to indicate ascending/descending)
@@ -75,10 +146,10 @@ function sortArray(arr, sortFieldsString) {
 			var ascending = true;
 			if(field.charAt(0) === '+') {
 				// Ignore value, default is already ascending
-				field = field.substr(1);
+				field = field.slice(1);
 			} else if(field.charAt(0) === '-') {
 				ascending = false;
-				field = field.substr(1);
+				field = field.slice(1);
 			}
 
 			// Compare field answer result if fields differ at this point

@@ -151,7 +151,7 @@ var FILTER_PARSER_STATES = {
 			// Add new filter reference
 			parser.getValue().filterReferences.push({
 				name: "",
-				args: []
+				args: [ null, null, null ]	// Placeholders for this, i, nodes
 			});
 			return true;
 		},
@@ -200,9 +200,11 @@ var FILTER_PARSER_STATES = {
 				parser.skipCharacter();
 			}
 
-			// Store new argument
+			// Insert new argument (before placeholders for i and nodes)
 			var filterReferences = parser.getValue().filterReferences;
-			filterReferences[filterReferences.length - 1].args.push(parseResult.value);
+			var args = filterReferences[filterReferences.length - 1].args;
+			args.splice(args.length - 2, 0, parseResult.value);
+
 			return true;
 		},
 		acceptStates: [
