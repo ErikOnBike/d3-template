@@ -1,12 +1,12 @@
 import {select,matcher} from "d3-selection";
+import {FieldParser} from "./field-parser";
 
 // Constants
-var FILTER_SEPARATOR = "|";
-var ARGUMENT_INDICATOR = ":";
 var REPEAT_GROUP_INFO = "__repeatGroupInfo";
 
 // Globals
 var namedRenderFilters = {};
+var fieldParser = new FieldParser();
 
 // Main function
 export function renderFilter(name, filterFunc) {
@@ -26,11 +26,26 @@ export function renderFilter(name, filterFunc) {
 
 // Renderer - Renders data on element
 function Renderer(fieldSelectorAndFilters, elementSelector) {
-	var parsedFieldSelector = parseFieldSelector(fieldSelectorAndFilters);
-	this.fieldSelector = parsedFieldSelector.fieldSelector;
+
+	// Parse field selector and (optional) filters
+	var parseResult = fieldParser.parse(fieldSelectorAndFilters);
+	if(parseResult.value === undefined) {
+		throw new SyntaxError("Failed to parse field selector and/or filter: " + parseResult.errorCode);
+	} else if(parseResult.index !== fieldSelectorAndFilters.length) {
+		throw new SyntaxError("Failed to parse field selector and/or filter: EXTRA_CHARACTERS");
+	}
+
+	// Append place holders to filter arguments
+	parseResult.value.filterReferences.forEach(function(filterReference) {
+		filterReference.args.splice(0, 0, null);	// this (prepend)
+		filterReference.args.push(null, null);		// i, nodes (append)
+	});
+
+	// Set instance variables
+	this.fieldSelectors = parseResult.value.fieldSelectors;
+	this.filterReferences = parseResult.value.filterReferences;
 	this.elementSelector = elementSelector;
-	this.filterReferences = parsedFieldSelector.filterReferences;
-	this.data = createDataFunction(this.fieldSelector);
+	this.data = createDataFunction(this.fieldSelectors);
 }
 
 Renderer.prototype.render = function(/* templateElement */) {
@@ -321,124 +336,16 @@ function applyEventHandlers(eventHandlers, selection) {
 }
 
 // Answer a d3 data function for specified field selector
-function createDataFunction(fieldSelector) {
-	if(fieldSelector === ".") {
+function createDataFunction(fieldSelectors) {
+	if(fieldSelectors[0] === ".") {
 		return function(d) { return d; };
 	} else {
 		return function(d) {
-			var fieldSelectors = fieldSelector.split(".");
 			return fieldSelectors.reduce(function(text, selector) {
 				return text !== undefined && text !== null ? text[selector] : text;
 			}, d);
 		};
 	}
-}
-
-// Parse a string with field selector and optional filters
-//	<fieldname>["."<fieldname>]* ["|" <filtername>[":" <argument>["," <argument>]* ] ]*
-//
-//	<argument> should be a JSON (parseable) literal
-//
-// Answered structure:
-//	{
-//		fieldSelector: <fieldSelector as string>,
-//		filterReferences: [
-//			{
-//				name: <filtername as string>,
-//				args: <arguments as array of literals>
-//			}
-//		]
-//	}
-//
-// The parsing is done extremely loosly with respect to allowed characters within names.
-// Only "|" and ":" are considered as special.
-function parseFieldSelector(fieldSelectorAndFilters) {
-
-	// Parse fieldname(s)
-	var filterSeparatorIndex = fieldSelectorAndFilters.indexOf(FILTER_SEPARATOR);
-	var result = {
-		fieldSelector: (filterSeparatorIndex >= 0 ?
-			fieldSelectorAndFilters.slice(0, filterSeparatorIndex) :
-			fieldSelectorAndFilters
-		),
-		filterReferences: []
-	};
-
-	// Parse filters
-	while(filterSeparatorIndex >= 0 && filterSeparatorIndex < fieldSelectorAndFilters.length) {
-		var nextFilterSeparatorIndex = fieldSelectorAndFilters.indexOf(FILTER_SEPARATOR, filterSeparatorIndex + 1);
-		var argumentIndicatorIndex = fieldSelectorAndFilters.indexOf(ARGUMENT_INDICATOR, filterSeparatorIndex + 1);
-
-		if(argumentIndicatorIndex >= 0 && (argumentIndicatorIndex < nextFilterSeparatorIndex || nextFilterSeparatorIndex < 0)) {
-
-			// Parse arguments until next filter (or end)
-			var argsParsed = parseArguments(fieldSelectorAndFilters, argumentIndicatorIndex + 1);
-			result.filterReferences.push({
-				name: fieldSelectorAndFilters.slice(filterSeparatorIndex + 1, argumentIndicatorIndex),
-				args: argsParsed.args
-			});
-
-			// Select next filter separator
-			filterSeparatorIndex = argsParsed.endIndex;
-		} else if(nextFilterSeparatorIndex >= 0) {
-
-			// Filter without arguments (another filter follows)
-			result.filterReferences.push({
-				name: fieldSelectorAndFilters.slice(filterSeparatorIndex + 1, nextFilterSeparatorIndex),
-				args: [ null, null, null ]	// d, i, nodes
-			});
-
-			// Select next filter separator
-			filterSeparatorIndex = nextFilterSeparatorIndex;
-		} else {
-
-			// Filter without arguments (nothing follows)
-			result.filterReferences.push({
-				name: fieldSelectorAndFilters.slice(filterSeparatorIndex + 1),
-				args: [ null, null, null ]	// d, i, nodes
-			});
-
-			// Select next filter separator
-			filterSeparatorIndex = -1;	// Done
-		}
-	}
-
-	return result;
-}
-
-function parseArguments(argumentsString, startIndex) {
-
-	// Parse until next filter separator (or end if none is present)
-	var nextFilterSeparatorIndex = argumentsString.indexOf(FILTER_SEPARATOR, startIndex);
-	if(nextFilterSeparatorIndex < 0) {
-		nextFilterSeparatorIndex = argumentsString.length;
-	}
-
-	// Filter separators may be part of a string, try next separators until successful
-	var args = null;
-	var lastParseException = null;
-	while(!args && nextFilterSeparatorIndex >= 0) {
-		try {
-
-			// Arguments turned into array of arguments (add d, i, nodes as null arguments. d at start, i and nodes at end)
-			args = JSON.parse("[ null, " + argumentsString.slice(startIndex, nextFilterSeparatorIndex) + ", null, null ]");
-		} catch(ex) {
-
-			// Invalid JSON string: try with next filter separator
-			nextFilterSeparatorIndex = argumentsString.indexOf(FILTER_SEPARATOR, nextFilterSeparatorIndex + 1);
-			lastParseException = ex;
-		}
-	}
-
-	// Fail if no arguments found
-	if(!args) {
-		throw new SyntaxError("Can't parse filter arguments: \"" + argumentsString.slice(startIndex) + "\". Exception: " + lastParseException.message);
-	}
-
-	return {
-		args: args,
-		endIndex: nextFilterSeparatorIndex
-	};
 }
 
 // Copy specified data onto all children of the element (recursively)

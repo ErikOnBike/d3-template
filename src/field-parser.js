@@ -32,7 +32,7 @@ var FILTER_PARSER_STATES = {
 		skipWhitespace: true,
 		process: function(parser) {
 			parser.setValue({
-				fieldSelector: [],
+				fieldSelectors: [],
 				filterReferences: []
 			});
 			return true;
@@ -43,7 +43,7 @@ var FILTER_PARSER_STATES = {
 				// A dot at the start means only a single dot is present (special field selector for the current data instance)
 				if(charCode === CHARACTER_DOT) {
 					parser.skipCharacter();
-					parser.getValue().fieldSelector.push(".");
+					parser.getValue().fieldSelectors.push(".");
 					return "end-special-field-selector";
 				}
 			},
@@ -61,10 +61,10 @@ var FILTER_PARSER_STATES = {
 				}
 			},
 			function(charCode, parser) {
-				if(FilterParser.isValidIdentifierStartCharCode(charCode)) {
+				if(FieldParser.isValidIdentifierStartCharCode(charCode)) {
 
 					// An unquoted field selector, start with empty string and repeatedly add valid characters (in next state)
-					parser.getValue().fieldSelector.push("");
+					parser.getValue().fieldSelectors.push("");
 					return "field-selector-unquoted";
 				}
 			}
@@ -86,7 +86,7 @@ var FILTER_PARSER_STATES = {
 			}
 
 			// Store new argument
-			parser.getValue().fieldSelector.push(parseResult.value);
+			parser.getValue().fieldSelectors.push(parseResult.value);
 			return true;
 		},
 		acceptStates: [
@@ -98,10 +98,10 @@ var FILTER_PARSER_STATES = {
 	"field-selector-unquoted": {
 		acceptStates: [
 			function(charCode, parser) {
-				if(FilterParser.isValidIdentifierCharCode(charCode)) {
+				if(FieldParser.isValidIdentifierCharCode(charCode)) {
 					parser.skipCharacter();
-					var fieldSelector = parser.getValue().fieldSelector;
-					fieldSelector[fieldSelector.length - 1] += String.fromCharCode(charCode);
+					var fieldSelectors = parser.getValue().fieldSelectors;
+					fieldSelectors[fieldSelectors.length - 1] += String.fromCharCode(charCode);
 					return "field-selector-unquoted";
 				}
 			},
@@ -157,7 +157,7 @@ var FILTER_PARSER_STATES = {
 		},
 		acceptStates: [
 			function(charCode) {
-				if(FilterParser.isValidIdentifierStartCharCode(charCode)) {
+				if(FieldParser.isValidIdentifierStartCharCode(charCode)) {
 					return "filter-name";
 				}
 			}
@@ -167,7 +167,7 @@ var FILTER_PARSER_STATES = {
 	"filter-name": {
 		acceptStates: [
 			function(charCode, parser) {
-				if(FilterParser.isValidIdentifierCharCode(charCode)) {
+				if(FieldParser.isValidIdentifierCharCode(charCode)) {
 					parser.skipCharacter();
 					var filterReferences = parser.getValue().filterReferences;
 					filterReferences[filterReferences.length - 1].name += String.fromCharCode(charCode);
@@ -243,35 +243,35 @@ var FILTER_PARSER_STATES = {
 	}
 };
 
-// FilterParser class
-export function FilterParser() {
+// FieldParser class
+export function FieldParser() {
 	Parser.call(this, FILTER_PARSER_STATES);
 }
-FilterParser.prototype = Object.create(Parser.prototype);
-FilterParser.prototype.constructor = FilterParser;
+FieldParser.prototype = Object.create(Parser.prototype);
+FieldParser.prototype.constructor = FieldParser;
 
 // Class methods
-FilterParser.isRegularLetter = function(charCode) {
+FieldParser.isRegularLetter = function(charCode) {
 	return	(charCode >= CHARACTER_LOWER_A && charCode <= CHARACTER_LOWER_Z) ||
 		(charCode >= CHARACTER_UPPER_A && charCode <= CHARACTER_UPPER_Z)
 	;
 };
 
-FilterParser.isNonAsciiDisplayableCharCode = function(charCode) {
+FieldParser.isNonAsciiDisplayableCharCode = function(charCode) {
 	// Very liberate validation which is too liberal for specification, but serves our purpose without introducing obvious problems
 	return charCode >= 0xa1;
 };
 
-FilterParser.isValidIdentifierStartCharCode = function(charCode) {
+FieldParser.isValidIdentifierStartCharCode = function(charCode) {
 	return	charCode === CHARACTER_DOLLAR_SIGN ||
 		charCode === CHARACTER_UNDERSCORE ||
-		FilterParser.isRegularLetter(charCode) ||
-		FilterParser.isNonAsciiDisplayableCharCode(charCode)
+		FieldParser.isRegularLetter(charCode) ||
+		FieldParser.isNonAsciiDisplayableCharCode(charCode)
 	;
 };
 
-FilterParser.isValidIdentifierCharCode = function(charCode) {
+FieldParser.isValidIdentifierCharCode = function(charCode) {
 	return	Parser.isDigit(charCode) ||
-		FilterParser.isValidIdentifierStartCharCode(charCode)
+		FieldParser.isValidIdentifierStartCharCode(charCode)
 	;
 };

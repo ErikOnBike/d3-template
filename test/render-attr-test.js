@@ -130,7 +130,7 @@ tape("render() attribute with illegal filter", function(test) {
 	var document = jsdom("<div><span data-value='{{.|postfix: X}}'>Some text here</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
-	test.throws(function() { selection.template(); }, /Can't parse filter arguments: /, "Illegal argument (missing quotes)");
+	test.throws(function() { selection.template(); }, /MISSING_VALUE/, "Illegal argument (missing quotes)");
 	test.end();
 });
 
@@ -138,7 +138,7 @@ tape("render() attribute with illegal filter", function(test) {
 	var document = jsdom("<div><span data-value='{{|. postfix: X}}'>Some text here</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
-	test.throws(function() { selection.template(); }, /Can't parse filter arguments: /, "Illegal argument (missing quotes)");
+	test.throws(function() { selection.template(); }, /MISSING_VALID_FIELD_SELECTOR/, "Illegal argument (missing quotes)");
 	test.end();
 });
 
