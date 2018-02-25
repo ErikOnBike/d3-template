@@ -8,3 +8,5 @@
 * [pagination](https://bl.ocks.org/ErikOnBike/1eceb2300e2acad5fd10b7275502cc02) - Pagination control (media-player style)
 * [transition](https://bl.ocks.org/ErikOnBike/6a6ff9e033cd883e31e631f8f2ebfbbe) - Transition multiple SVG paths
 
+## Other
+* [Bubble Chart](http://bl.ocks.org/ErikOnBike/2afe79ba9a5ee7a6a86a0c3fe04718a7) - Rewrite of Mike's Bubble Chart using a template
