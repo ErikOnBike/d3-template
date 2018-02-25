@@ -59,21 +59,11 @@ function formatValue(value, formatString, i, nodes) {
 		parsedFormatString = parsedFormatStringCache[formatString] = parseFormatString(formatString);
 	}
 
-	// Iteratively call all formatString parts (fixed string and field selectors with optional filters)
+	// Iteratively append all formatString parts (fixed string and field selectors with optional filters)
 	var node = this;
 	return parsedFormatString.reduce(function(result, formatStringPart) {
 		if(formatStringPart.dataFunction) {
-			var fieldValue = formatStringPart.filterReferences.reduce(function(result, filterReference) {
-				var filter = renderFilter(filterReference.name);
-				if(filter) {
-					var args = filterReference.args.slice(0);
-					args[0] = result;
-					args[args.length - 2] = i;
-					args[args.length - 1] = nodes;
-					return filter.apply(node, args);
-				}
-				return result;
-			}, formatStringPart.dataFunction(value));
+			var fieldValue = formatStringPart.dataFunction.call(node, value, i, nodes);
 			return result + fieldValue;
 		}
 		return result + formatStringPart;
@@ -90,10 +80,12 @@ function parseFormatString(formatString) {
 		var templateIndex = formatString.indexOf("{", index);
 		if(templateIndex >= 0) {
 
-			// Append string
-			result.push(formatString.slice(index, templateIndex));
+			// Append string in front of template
+			if(templateIndex > index) {
+				result.push(formatString.slice(index, templateIndex));
+			}
 
-			// Parse field selector with optional filters
+			// Parse field selector with optional filters (+1 to skip opening curly brace)
 			var parseResult = fieldParser.parse(formatString, templateIndex + 1);
 			if(parseResult.value === undefined) {
 				throw new SyntaxError("Invalid format string in filter: " + parseResult.errorCode);
@@ -103,8 +95,7 @@ function parseFormatString(formatString) {
 
 			// Append data function for field selector and filter references
 			result.push({
-				dataFunction: createDataFunction(parseResult.value.fieldSelectors),
-				filterReferences: parseResult.value.filterReferences
+				dataFunction: createDataFunction(parseResult.value)
 			});
 
 			// Update index for further parsing (+ 1 to skip closing curly brace)
