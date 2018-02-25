@@ -8,9 +8,9 @@ loader.import("./src/field-parser.js").then(function(m) {
 
 tape("filter-parser field selectors", function(test) {
 	var fieldParser = new m.FieldParser();
-	test.deepEqual(fieldParser.parse("."), { value: { fieldSelectors: [ "." ], filterReferences: [] }, index: 1 }, "Parse <.>");
-	test.deepEqual(fieldParser.parse("..a"), { value: { fieldSelectors: [ "." ], filterReferences: [] }, index: 1 }, "Parse <..a> (partial)");
-	test.deepEqual(fieldParser.parse(".\"a\""), { value: { fieldSelectors: [ "." ], filterReferences: [] }, index: 1 }, "Parse <.\\\"a\\\"> (partial)");
+	test.deepEqual(fieldParser.parse("."), { value: { fieldSelectors: [], filterReferences: [] }, index: 1 }, "Parse <.>");
+	test.deepEqual(fieldParser.parse("..a"), { value: { fieldSelectors: [], filterReferences: [] }, index: 1 }, "Parse <..a> (partial)");
+	test.deepEqual(fieldParser.parse(".\"a\""), { value: { fieldSelectors: [], filterReferences: [] }, index: 1 }, "Parse <.\\\"a\\\"> (partial)");
 	test.deepEqual(fieldParser.parse("x"), { value: { fieldSelectors: [ "x" ], filterReferences: [] }, index: 1 }, "Parse <x>");
 	test.deepEqual(fieldParser.parse("\"x\""), { value: { fieldSelectors: [ "x" ], filterReferences: [] }, index: 3 }, "Parse <\"x\">");
 	test.deepEqual(fieldParser.parse("x_"), { value: { fieldSelectors: [ "x_" ], filterReferences: [] }, index: 2 }, "Parse <x_>");

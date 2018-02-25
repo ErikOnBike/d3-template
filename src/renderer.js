@@ -316,14 +316,11 @@ export function createDataFunction(parseFieldResult) {
 	var filterReferences = parseFieldResult.filterReferences;
 
 	// Create initial value function
-	var initialValueFunction = fieldSelectors[0] === "." ?
-		function(d) { return d; } :
-		function(d) {
-			return fieldSelectors.reduce(function(text, selector) {
-				return text !== undefined && text !== null ? text[selector] : text;
-			}, d);
-		}
-	;
+	var initialValueFunction = function(d) {
+		return fieldSelectors.reduce(function(text, selector) {
+			return text !== undefined && text !== null ? text[selector] : text;
+		}, d);
+	};
 
 	// Create data function based on filters and initial value
 	return function(d, i, nodes) {

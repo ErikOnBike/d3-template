@@ -43,7 +43,6 @@ var FILTER_PARSER_STATES = {
 				// A dot at the start means only a single dot is present (special field selector for the current data instance)
 				if(charCode === CHARACTER_DOT) {
 					parser.skipCharacter();
-					parser.getValue().fieldSelectors.push(".");
 					return "end-special-field-selector";
 				}
 			},
