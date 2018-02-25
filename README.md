@@ -297,7 +297,7 @@ The following list shows the standard render filters available. For usage see [r
 <a name="formatSpecifier"></a>
 The *specifier* argument for the **format** filter should be a (JSON) string containing template references with optional filter references. For example: `"translate({x},{y})"` or `"Value: {value|default: \"<unknown>\"}"`.
 
-<a name="sortFields></a>
+<a name="sortFields"></a>
 The *sortFields* argument for the **sort** filter should be a string with comma separated list of field names. Each name can be prepended by `-` or `+` to indicate descending or ascending order (with ascending as default if none specified). Fields should be singular. It is currently not possible to specify "address.street" to access the field "street" of the address instance.
 
     <!-- Sort by last name (ascending) and birth date (descending, ie youngest first) -->
