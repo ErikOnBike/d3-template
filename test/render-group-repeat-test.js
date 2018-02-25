@@ -189,6 +189,19 @@ tape("render() special repeat group filters without array", function(test) {
 	var selection = d3.select(node);
 	var data = "hello world";
 	selection.template().render(data);
-	test.equal(selection.attr("data-value"), "-1", "No repeat index on non-repeat template");
+	test.equal(selection.attr("data-value"), "0", "Repeat index 0 on non-repeat template");
+	test.end();
+});
+
+tape("render() repeat array with format filter", function(test) {
+	var document = jsdom("<div data-repeat='{{.}}'><div><span>{{.|format: \"Index: {.|repeatIndex} is {.}\"}}</span></div></div>");
+	var node = document.querySelector("div");
+	var selection = d3.select(node);
+	var data = [ "hello", "world", "!" ];
+	selection.template().render(data);
+	selection.selectAll("span").each(function(d, i) {
+		var span = d3.select(this);
+		test.equal(span.text(), "Index: " + i + " is " + d, "Index applied using format");
+	});
 	test.end();
 });

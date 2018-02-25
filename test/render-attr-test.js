@@ -1,7 +1,6 @@
 var tape = require("tape");
 var jsdom = require("./jsdom");
-var d3 = Object.assign({}, require("d3-selection"));
-require("../");
+var d3 = Object.assign({}, require("d3-selection"), require("../"));
 
 tape("render() attribute on root element", function(test) {
 	var document = jsdom("<div data-value='{{field}}'></div>");
@@ -98,6 +97,16 @@ tape("render() attribute rendered with nested object value with missing fields",
 	test.end();
 });
 
+tape("render() attribute with namespace", function(test) {
+	var document = jsdom("<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xyz=\"http://www.w3.org/1999/xlink\"><use xlink:data-attr-href='{{id|prefix: \"#\"}}'></use></svg>");
+	var node = document.querySelector("svg");
+	var selection = d3.select(node);
+	selection.template().render({ id: "ref_id" });
+	test.equal(d3.namespaces["xlink"], "http://www.w3.org/1999/xlink", "xlink namespace exists");
+	test.equal(selection.select("use").attr("xlink:href"), "#ref_id", "href with namespace");
+	test.end();
+});
+
 tape("render() attribute with filter", function(test) {
 	var document = jsdom("<div><span data-value='{{.|upper}}' data-value2='{{.|substr: 2, 2}}'>Some text here</span></div>");
 	var node = document.querySelector("div");
@@ -108,11 +117,20 @@ tape("render() attribute with filter", function(test) {
 	test.end();
 });
 
+tape("render() attribute with multiple filters", function(test) {
+	var document = jsdom("<div><span data-value='{{.|upper|prefix: \"x\"|postfix: \"y\"}}'>Some text here</span></div>");
+	var node = document.querySelector("div");
+	var selection = d3.select(node);
+	selection.template().render("Hello");
+	test.equal(selection.select("span").attr("data-value"), "xHELLOy", "Field to uppercase, prefixed and postfixed");
+	test.end();
+});
+
 tape("render() attribute with illegal filter", function(test) {
 	var document = jsdom("<div><span data-value='{{.|postfix: X}}'>Some text here</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
-	test.throws(function() { selection.template(); }, /Can't parse filter arguments: /, "Illegal argument (missing quotes)");
+	test.throws(function() { selection.template(); }, /MISSING_VALUE/, "Illegal argument (missing quotes)");
 	test.end();
 });
 
@@ -120,8 +138,15 @@ tape("render() attribute with illegal filter", function(test) {
 	var document = jsdom("<div><span data-value='{{|. postfix: X}}'>Some text here</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
-	selection.template().render("hello");
-	test.equal(selection.select("span").attr("data-value"), null, "No attribute present");
+	test.throws(function() { selection.template(); }, /MISSING_VALID_FIELD_SELECTOR/, "Illegal argument (missing quotes)");
+	test.end();
+});
+
+tape("render() attribute with illegal filter", function(test) {
+	var document = jsdom("<div><span data-value='{{.|upper lower}}'>Some text here</span></div>");
+	var node = document.querySelector("div");
+	var selection = d3.select(node);
+	test.throws(function() { selection.template(); }, /EXTRA_CHARACTERS/, "Illegal argument (exta characters)");
 	test.end();
 });
 
@@ -131,5 +156,17 @@ tape("render() attribute with unknown filter", function(test) {
 	var selection = d3.select(node);
 	selection.template().render("hello");
 	test.equal(selection.select("span").attr("data-value"), "hello", "Unknown filter has no effect.");
+	test.end();
+});
+
+tape("render() non-group with filter using i, nodes", function(test) {
+	var document = jsdom("<div><span data-value='{{.|extraParams}}'>Some text here</span></div>");
+	var node = document.querySelector("div");
+	var selection = d3.select(node);
+	d3.renderFilter("extraParams", function(d, i, nodes) {
+		return d + "," + i + "," + nodes.length;
+	});
+	selection.template().render("hello");
+	test.equal(selection.select("span").attr("data-value"), "hello,0,1", "Filter on non-group gives i and nodes.");
 	test.end();
 });

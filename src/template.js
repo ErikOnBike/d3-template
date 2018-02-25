@@ -216,7 +216,22 @@ Template.prototype.addAttributeRenderers = function(element, owner) {
 	if(element.node().hasAttributes()) {
 		var attributeMap = element.node().attributes;
 		for(var i = 0; i < attributeMap.length; i++) {
-			attributes.push({ name: attributeMap[i].name, value: attributeMap[i].value });
+			var name = attributeMap[i].name;
+			var localName;
+			var prefix = undefined;
+			var separatorIndex = name.indexOf(":");
+			if(separatorIndex >= 0) {
+				prefix = name.slice(0, separatorIndex);
+				localName = name.slice(separatorIndex + 1);
+			} else {
+				localName = name;
+			}
+			attributes.push({
+				prefix: prefix,
+				localName: localName,
+				name: name,
+				value: attributeMap[i].value
+			});
 		}
 	}
 	
@@ -230,7 +245,7 @@ Template.prototype.addAttributeRenderers = function(element, owner) {
 
 			// Decide which attribute/style will be rendered
 			var isStyle = false;
-			var renderAttributeName = attribute.name;
+			var renderAttributeName = attribute.localName;
 			var nameMatch = renderAttributeName.match(ATTRIBUTE_REFERENCE_REG_EX);
 			if(nameMatch) {
 				renderAttributeName = nameMatch[1];	// Render the referenced attribute
@@ -240,6 +255,11 @@ Template.prototype.addAttributeRenderers = function(element, owner) {
 					renderAttributeName = nameMatch[1];	// Render the referenced style
 					isStyle = true;
 				}
+			}
+
+			// Re-apply namespace
+			if(attribute.prefix) {
+				renderAttributeName = attribute.prefix + ":" + renderAttributeName;
 			}
 
 			// Add renderer

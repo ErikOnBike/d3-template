@@ -2,7 +2,7 @@
 
 *(This version has not been tested on V3 or earlier versions of D3)*
 
-d3-template is a D3 plugin to support templates using D3's data binding mechanism.  This means you can use D3's familiar functionality directly on or with your templates. Apply transactions or add event handlers to template elements with access to the bound data. Render new data on a template thereby updating attributes, styles and text. Also new elements are added and superfluous elements are removed from repeating groups (D3's enter/exit). This works for both HTML as well as SVG elements.
+d3-template is a D3 plugin to support templates using D3's data binding mechanism.  This means you can use D3's familiar functionality directly on or with your templates. Apply transactions or add event handlers to template elements with access to the bound data. Render new data on a template thereby updating attributes, styles and text. Also new elements are added and superfluous elements are removed from repeating groups (D3's enter/exit). This works for both HTML as well as SVG elements. Templates will normally be acting on the live DOM, but can be used on virtual DOM's (like [jsdom](https://github.com/jsdom/jsdom)) as well.
 
 If you are looking for existing templating support like Handlebars, Mustache or Nunjucks have a look at [d3-templating](https://github.com/jkutianski/d3-templating).
 
@@ -120,7 +120,7 @@ The following *features* are present:
 * Custom filters can be added by calling:
 
     ```Javascript
-    d3.renderFilter(name, function(value[, parameters ]) { return /* ...your code here... */; });
+    d3.renderFilter(name, function(value[, parameters ], i, nodes) { return /* ...your code here... */; });
     ```
 
 * Event handlers added onto elements before the template was created (using `selection.on()`), will be (re)applied when rendering the template. The normal D3-style event handler arguments are passed when the handlers are called (ie `d, i, nodes` and `this` is set to the node receiving the event).
@@ -189,7 +189,6 @@ The following known *limitations* are present:
     </span>
     ```
 
-* Currently only a single filter can be applied. By creating a custom filter more elaborate functionality is possible to reach the same effect.
 * No support for the 'import' of a template within another template yet.
 
 ## <a name="API-Reference">API Reference</a>
@@ -215,7 +214,7 @@ Renders *data* onto the specified *selection*. If the `elementSelectorAttribute`
 
 Retrieve or register a render filter for the specified *name*. If *filterFunc* is not specified the current filter named *name* is returned. If *filterFunc* is `null` an already registered filter for *name* is removed. If *filterFunc* is a function it is registered under *name* possibly replacing an existing filter. If *filterFunc* is not a function (nor null) an exception is thrown.
 
-The filter function *filterFunc* is called during rendering with the data bound to the element being rendered and `this` set to the node being rendered. Arguments can be specified in the template. These will be passed to the *filterFunc* as well. The function should return the filtered result.
+The filter function *filterFunc* is called during rendering with the data bound to the element being rendered and `this` set to the node being rendered. Arguments can be specified in the template. These will be passed to the *filterFunc* as well. Also D3's typical `i` and `nodes` arguments are passed as the last two arguments in the function call. The function should return the filtered result.
 
     <div>{{value|filter: "arg1", 2, { "lowerCase": true }}}</div>
     <script>
@@ -269,6 +268,8 @@ The following list shows the standard render filters available. For usage see [r
   | **default**: *defaultValue* | Answer *defaultValue* if the data is `null` or `undefined`, otherwise data itself |
   | **emptyDefault**: *defaultValue* | Answer *defaultValue* if the data is falsy or has length 0, otherwise data itself |
   | **equals**: *otherValue* | Answer a boolean as the result of comparing data with *otherValue* using `===` |
+  | **length** | Answer the length of the data (valid for Strings and Arrays) |
+  | **format**: *specifier* | Answer the data formatted using [*specifier*](#formatSpecifier) |
   | *String filters* | *Data must be a [String](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)* |
   | **upper** | Answer the data converted to uppercase using [toLocaleUpperCase](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/toLocaleUpperCase) |
   | **lower** | Answer the data converted to lowercase using [toLocaleLowerCase](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/toLocaleLowerCase) |
@@ -293,10 +294,16 @@ The following list shows the standard render filters available. For usage see [r
   | **repeatPosition** | Answer the position (starts at 1) of the current element within the enclosing repeat group (filter data is ignored) |
   | **repeatLength** | Answer the length of the enclosing repeat group (filter data is ignored) |
 
-The *sortFields* argument for the **sort** field should be a string with comma separated list of field names. Each name can be prepended by `-` or `+` to indicate descending or ascending order (with ascending as default if none specified). Fields should be singular. It is currently not possible to specify "address.street" to access the field "street" of the address instance.
+<a name="formatSpecifier">
+The *specifier* argument for the **format** filter should be a (JSON) string containing template references with optional filter references. For example: `"translate({x},{y})"` or `"Value: {value|default: \"<unknown>\"}"`.
+</a>
+
+<a name="sortFields>
+The *sortFields* argument for the **sort** filter should be a string with comma separated list of field names. Each name can be prepended by `-` or `+` to indicate descending or ascending order (with ascending as default if none specified). Fields should be singular. It is currently not possible to specify "address.street" to access the field "street" of the address instance.
 
     <!-- Sort by last name (ascending) and birth date (descending, ie youngest first) -->
     <ul data-repeat='{{.|sort: "lastName,-birthDate"}}'>
+</a>
 
 ### <a name="Repeating-groups">Repeating groups</a>
 

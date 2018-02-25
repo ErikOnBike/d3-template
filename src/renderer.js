@@ -1,11 +1,12 @@
 import {select,matcher} from "d3-selection";
+import {FieldParser} from "./field-parser";
 
 // Constants
-var FIELD_SELECTOR_REG_EX = /^([^|]+)\s*(\|\s*([a-zA-Z0-9\-_\.]+)\s*(:\s*(.*))?)?$/u;
 var REPEAT_GROUP_INFO = "__repeatGroupInfo";
 
 // Globals
 var namedRenderFilters = {};
+var fieldParser = new FieldParser();
 
 // Main function
 export function renderFilter(name, filterFunc) {
@@ -14,7 +15,7 @@ export function renderFilter(name, filterFunc) {
 			delete namedRenderFilters[name];
 		} else {
 			if(typeof filterFunc !== "function") {
-				throw "No function specified when registering renderFilter: " + name;
+				throw new Error("No function specified when registering renderFilter: " + name);
 			}
 			namedRenderFilters[name] = filterFunc;
 		}
@@ -24,17 +25,28 @@ export function renderFilter(name, filterFunc) {
 }
 
 // Renderer - Renders data on element
-function Renderer(fieldSelector, elementSelector) {
-	var trimmed = function(value) { return value ? value.trim() : value; };
-	var match = fieldSelector.match(FIELD_SELECTOR_REG_EX);
-	this.fieldSelector = match ? trimmed(match[1]) : fieldSelector;
+function Renderer(fieldSelectorAndFilters, elementSelector) {
+
+	// Parse field selector and (optional) filters
+	var parseResult = fieldParser.parse(fieldSelectorAndFilters);
+	if(parseResult.value === undefined) {
+		throw new SyntaxError("Failed to parse field selector and/or filter: " + parseResult.errorCode);
+	} else if(parseResult.index !== fieldSelectorAndFilters.length) {
+		throw new SyntaxError("Failed to parse field selector and/or filter: EXTRA_CHARACTERS");
+	}
+
+	// Set instance variables
+	this.data = createDataFunction(parseResult.value);
 	this.elementSelector = elementSelector;
-	this.filterReference = match ? createFilterReference(trimmed(match[3]), trimmed(match[5])) : null;
-	this.data = createDataFunction(this.fieldSelector);
 }
 
 Renderer.prototype.render = function(/* templateElement */) {
 	// Intentionally left empty
+};
+
+// Answer the data function
+Renderer.prototype.getData = function() {
+	return this.data;
 };
 
 // Answer the element which should be rendered (indicated by the receivers elementSelector)
@@ -47,22 +59,6 @@ Renderer.prototype.getElement = function(templateElement) {
 	}
 	return selection;
 };
-
-// Answer the data function of the receiver with the receivers filterReference applied (if applicable)
-Renderer.prototype.getFilteredData = function() {
-	if(this.filterReference) {
-		var filter = namedRenderFilters[this.filterReference.name];
-		if(filter) {
-			var self = this;
-			var args = this.filterReference.args.slice(0);
-			return function(d, i, nodes) {
-				args[0] = self.data(d, i, nodes);
-				return filter.apply(this, args);
-			};
-		}
-	}
-	return this.data;
-}
 
 // Answer whether receiver is AttributeRenderer
 Renderer.prototype.isAttributeRenderer = function() {
@@ -97,7 +93,7 @@ TextRenderer.prototype.render = function(templateElement, transition) {
 	if(transition) {
 		templateElement = templateElement.transition(transition);
 	}
-	this.getElement(templateElement).text(this.getFilteredData());
+	this.getElement(templateElement).text(this.getData());
 };
 
 // AttributeRenderer - Renders data as attribute of element
@@ -114,7 +110,7 @@ AttributeRenderer.prototype.render = function(templateElement, transition) {
 	if(transition) {
 		templateElement = templateElement.transition(transition);
 	}
-	this.getElement(templateElement).attr(this.attribute, this.getFilteredData());
+	this.getElement(templateElement).attr(this.attribute, this.getData());
 };
 
 // Answer whether receiver is AttributeRenderer
@@ -136,7 +132,7 @@ StyleRenderer.prototype.render = function(templateElement, transition) {
 	if(transition) {
 		templateElement = templateElement.transition(transition);
 	}
-	this.getElement(templateElement).style(this.style, this.getFilteredData());
+	this.getElement(templateElement).style(this.style, this.getData());
 };
 
 // Answer whether receiver is StyleRenderer
@@ -164,7 +160,7 @@ GroupRenderer.prototype.render = function(templateElement, transition) {
 	// Join data onto DOM
 	var joinedElements = this.getElement(templateElement)
 		.selectAll(function() { return this.children; })
-			.data(this.getFilteredData())
+			.data(this.getData())
 	;
 
 	// Add new elements
@@ -267,20 +263,6 @@ RepeatRenderer.prototype.isRepeatRenderer = function() {
 	return true;
 };
 
-// Answer specified repeat group property
-RepeatRenderer.getProperty = function(node, property) {
-
-	// Find the property by walking up the parent chain until found
-	while(node) {
-		if(node[REPEAT_GROUP_INFO]) {
-			return node[REPEAT_GROUP_INFO][property];
-		}
-		node = node.parentNode;
-	}
-
-	return -1;
-};
-
 // IfRenderer - Renders data to a conditional group of elements
 export function IfRenderer(fieldSelector, elementSelector, childElement) {
 	GroupRenderer.call(this, fieldSelector, elementSelector, childElement);
@@ -289,13 +271,13 @@ export function IfRenderer(fieldSelector, elementSelector, childElement) {
 IfRenderer.prototype = Object.create(GroupRenderer.prototype);
 IfRenderer.prototype.constructor = IfRenderer;
 
-IfRenderer.prototype.getFilteredData = function() {
+IfRenderer.prototype.getData = function() {
 
 	// Use d3's data binding of arrays to handle conditionals.
 	// For conditional group create array with either the data as single element or empty array.
 	// This will ensure that a single element is created/updated or an existing element is removed.
 	var self = this;
-	return function(d, i, nodes) { return Renderer.prototype.getFilteredData.call(self)(d, i, nodes) ? [ d ] : []; };
+	return function(d, i, nodes) { return Renderer.prototype.getData.call(self)(d, i, nodes) ? [ d ] : []; };
 };
 
 // WithRenderer - Renders data to a group of elements with new scope
@@ -306,13 +288,13 @@ export function WithRenderer(fieldSelector, elementSelector, childElement) {
 WithRenderer.prototype = Object.create(GroupRenderer.prototype);
 WithRenderer.prototype.constructor = WithRenderer;
 
-WithRenderer.prototype.getFilteredData = function() {
+WithRenderer.prototype.getData = function() {
 
 	// Use d3's data binding of arrays to handle with.
 	// For with group create array with the new scoped data as single element
 	// This will ensure that all children will receive newly scoped data
 	var self = this;
-	return function(d, i, nodes) { return [ Renderer.prototype.getFilteredData.call(self)(d, i, nodes) ]; };
+	return function(d, i, nodes) { return [ Renderer.prototype.getData.call(self)(d, i, nodes) ]; };
 };
 
 // Helper functions
@@ -329,43 +311,34 @@ function applyEventHandlers(eventHandlers, selection) {
 }
 
 // Answer a d3 data function for specified field selector
-function createDataFunction(fieldSelector) {
-	if(fieldSelector === ".") {
-		return function(d) { return d; };
-	} else {
-		return function(d) {
-			var fieldSelectors = fieldSelector.split(".");
-			return fieldSelectors.reduce(function(text, selector) {
-				return text !== undefined && text !== null ? text[selector] : text;
-			}, d);
-		};
-	}
-}
+export function createDataFunction(parseFieldResult) {
+	var fieldSelectors = parseFieldResult.fieldSelectors;
+	var filterReferences = parseFieldResult.filterReferences;
 
-// Create a filter reference consisting of 'name' and 'arguments' pair (to be used during rendering)
-function createFilterReference(name, argumentsString) {
-	if(!name) {
-		return null;
-	}
+	// Create initial value function
+	var initialValueFunction = function(d) {
+		return fieldSelectors.reduce(function(text, selector) {
+			return text !== undefined && text !== null ? text[selector] : text;
+		}, d);
+	};
 
-	// Parse arguments string into array of literal values (ie no references allowed)
-	var args = null;
-	if(argumentsString) {
-		try {
+	// Create data function based on filters and initial value
+	return function(d, i, nodes) {
+		var node = this;
+		return filterReferences.reduce(function(d, filterReference) {
+			var filter = namedRenderFilters[filterReference.name];
+			if(filter) {
+				var args = filterReference.args.slice(0);
 
-			// Arguments prefixed by single null value which will be replaced by the data during rendering
-			args = JSON.parse("[null," + argumentsString + "]");
-		} catch(ex) {
-			throw new SyntaxError("Can't parse filter arguments: \"" + argumentsString + "\". Exception: " + ex.message);
-		}
-	} else {
-		args = [ null ];
-	}
+				// Prepend d
+				args.splice(0, 0, d);
 
-	// Answer filter pair
-	return {
-		name: name,
-		args: args
+				// Append i and nodes
+				args.push(i, nodes);
+				return filter.apply(node, args);
+			}
+			return d;
+		}, initialValueFunction(d, i, nodes));
 	};
 }
 
