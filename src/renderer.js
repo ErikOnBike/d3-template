@@ -1,9 +1,6 @@
 import {select,matcher} from "d3-selection";
 import {FieldParser} from "./field-parser";
 
-// Constants
-var REPEAT_GROUP_INFO = "__repeatGroupInfo";
-
 // Globals
 var namedRenderFilters = {};
 var fieldParser = new FieldParser();
@@ -171,19 +168,10 @@ GroupRenderer.prototype.render = function(templateElement, transition) {
 	;
 
 	// Make data same for all children of the new elements
-	newElements.each(function(d, i, nodes) {
+	newElements.each(function() {
 		var newElement = select(this);
 		var data = newElement.datum();	// New elements receive data in root by enter/append above
 		copyDataToChildren(data, newElement);
-
-		// Copy repeat data onto element
-		if(self.isRepeatRenderer()) {
-			this[REPEAT_GROUP_INFO] = {
-				index: i,
-				position: i + 1,
-				length: nodes.length
-			};
-		}
 	});
 
 	// Add event handlers to new elements
