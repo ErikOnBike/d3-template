@@ -1,4 +1,4 @@
-import {select,matcher} from "d3-selection";
+import {matcher} from "d3-selection";
 import {FieldParser} from "./field-parser";
 
 // Globals
@@ -167,13 +167,6 @@ GroupRenderer.prototype.render = function(templateElement, transition) {
 			.append(function() { return self.childElement.node().cloneNode(true); })
 	;
 
-	// Make data same for all children of the new elements
-	newElements.each(function() {
-		var newElement = select(this);
-		var data = newElement.datum();	// New elements receive data in root by enter/append above
-		copyDataToChildren(data, newElement);
-	});
-
 	// Add event handlers to new elements
 	Object.keys(this.eventHandlersMap).forEach(function(selector) {
 		var selection = newElements.filter(matcher(selector));
@@ -328,13 +321,4 @@ export function createDataFunction(parseFieldResult) {
 			return d;
 		}, initialValueFunction(d, i, nodes));
 	};
-}
-
-// Copy specified data onto all children of the element (recursively)
-var copyDataToChildren = function(data, element) {
-	element.selectAll(function() { return this.children; }).each(function() {
-		var childElement = select(this);
-		childElement.datum(data);
-		copyDataToChildren(data, childElement);
-	});
 }

@@ -13,7 +13,7 @@ var defaults = {
 var FIELD_SELECTOR_REG_EX = /^\s*\{\{\s*(.*)\s*\}\}\s*$/u;
 var ATTRIBUTE_REFERENCE_REG_EX = /^data-attr-(.*)$/iu;
 var STYLE_REFERENCE_REG_EX = /^data-style-(.*)$/iu;
-var SCOPE_BOUNDARY = "__templateScope";
+var SCOPE_BOUNDARY = "__d3TemplateScope";
 var EVENT_HANDLERS = "__on";
 
 // Globals
@@ -89,6 +89,22 @@ function Template(options) {
 	this.renderers = [];
 }
 
+// Class methods
+// Join data on template element(s)
+Template.joinData = function(data, element) {
+
+	// Set data on element
+	element.datum(data);
+
+	// Set data on all descendants (within root scope, remainder will be set by renderers)
+	if(!element.classed(SCOPE_BOUNDARY)) {
+		element.selectAll(function() { return this.children; }).each(function() {
+			Template.joinData(data, select(this));
+		});
+	}
+};
+
+// Instance methods
 // Add renderers
 Template.prototype.addRenderer = GroupRenderer.prototype.addRenderer;
 
@@ -96,31 +112,12 @@ Template.prototype.addRenderer = GroupRenderer.prototype.addRenderer;
 Template.prototype.render = function(data, element, transition) {
 
 	// Join data
-	this.joinData(data, element);
+	Template.joinData(data, element);
 
 	// Render data on element
 	this.renderers.forEach(function(renderer) {
 		renderer.render(element, transition);
 	});
-};
-
-// Join data on template element(s)
-Template.prototype.joinData = function(data, element) {
-
-	// Set data on element
-	element.datum(data);
-
-	// Set data on all descendants (within root scope, remainder will be set by renderers)
-	var copyDataToChildren = function(element) {
-		element.selectAll(function() { return this.children; }).each(function() {
-			var childElement = select(this);
-			childElement.datum(data);
-			if(!this[SCOPE_BOUNDARY]) {
-				copyDataToChildren(childElement);
-			}
-		})
-	};
-	copyDataToChildren(element);
 };
 
 // Add renderers for the specified element to specified owner
@@ -195,7 +192,7 @@ Template.prototype.addGroupRenderers = function(element, owner) {
 		element.attr(group.attr, null);
 
 		// Mark element as scope boundary
-		element.node()[SCOPE_BOUNDARY] = true;
+		element.classed(SCOPE_BOUNDARY, true);
 
 		// Add renderers for the group element's child (the group renderer is the owner)
 		if(childElement.size() === 1) {
