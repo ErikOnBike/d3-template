@@ -28,9 +28,9 @@ function Renderer(fieldSelectorAndFilters, elementSelector) {
 	// Parse field selector and (optional) filters
 	var parseResult = fieldParser.parse(fieldSelectorAndFilters);
 	if(parseResult.value === undefined) {
-		throw new SyntaxError("Failed to parse field selector and/or filter: " + parseResult.errorCode);
+		throw new SyntaxError("Failed to parse field selector and/or filter <" + fieldSelectorAndFilters + "> @ " + parseResult.index + ": " + parseResult.errorCode);
 	} else if(parseResult.index !== fieldSelectorAndFilters.length) {
-		throw new SyntaxError("Failed to parse field selector and/or filter: EXTRA_CHARACTERS");
+		throw new SyntaxError("Failed to parse field selector and/or filter <" + fieldSelectorAndFilters + "> @ " + parseResult.index + ": EXTRA_CHARACTERS");
 	}
 
 	// Set instance variables
