@@ -204,12 +204,14 @@ Creates a template from the specified *selection*. The selection might be change
 
 If *options* is specified it should be an object containing properties describing the template attribute names being used. Only the properties that need custom values should be present. The following are the default options values:
 
-    {
-        repeatAttribute: "data-repeat",
-        ifAttribute: "data-if",
-        withAttribute: "data-with",
-        elementSelectorAttribute: "data-template"  // Used to add identification to elements
-    }
+```Javascript
+{
+    repeatAttribute: "data-repeat",
+    ifAttribute: "data-if",
+    withAttribute: "data-with",
+    elementSelectorAttribute: "data-template"  // Used to add identification to elements
+}
+```
 
 <a name="render" href="#render">#</a> d3.<b>render</b>(<i>selection, data[, options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L57)
 
@@ -221,16 +223,18 @@ Retrieve or register a render filter for the specified *name*. If *filterFunc* i
 
 The filter function *filterFunc* is called during rendering with the data bound to the element being rendered and `this` set to the node being rendered. Arguments can be specified in the template. These will be passed to the *filterFunc* as well. Also D3's typical `i` and `nodes` arguments are passed as the last two arguments in the function call. The function should return the filtered result.
 
-    <div>{{value|filter: "arg1", 2, { "lowerCase": true }}}</div>
-    <script>
-        d3.renderFilter("filter", function(d, aString, aNumber, convert) {
-            var result = aString + d.repeat(aNumber);
-            if(convert.lowerCase) {
-                result = result.toLowerCase();
-            }
-            return result;
-        });
-    </script>
+```HTML
+<div>{{value|filter: "arg1", 2, { "lowerCase": true }}}</div>
+<script>
+    d3.renderFilter("filter", function(d, aString, aNumber, convert) {
+        var result = aString + d.repeat(aNumber);
+        if(convert.lowerCase) {
+            result = result.toLowerCase();
+        }
+        return result;
+    });
+</script>
+```
 
 Arguments specified within the template can only be literal (JSON) values. Removing the quotes around `"arg1"` or `"lowerCase"` will result in an exception since these will become references instead of string literals. The arguments (everything after the colon) are parsed as a list of comma separated JSON values. This means literal values like `true`, `false` and `null` are allowed and strings are surrounded by double quotes (see also [JSON](http://json.org)). Use standard HTML attribute escaping with %34 for a double and %39 for a single quote if both are needed in the same filter in an attribute. An easy way to be able to use double quotes within attributes, is to define the attributes with single quotes (although double quotes are the predominant variant).
 
@@ -238,31 +242,37 @@ Arguments specified within the template can only be literal (JSON) values. Remov
 
 Creates a template from this *selection*. The following are all equivalent:
 
-    d3.template(selection, options);
-    selection.template(options);
-    selection.call(d3.template, options)
+```Javascript
+d3.template(selection, options);
+selection.template(options);
+selection.call(d3.template, options)
+```
 
 <a name="selection_render" href="#selection_render">#</a> <i>selection</i>.<b>render</b>(<i>data[, options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L62)
 
 Renders *data* onto this *selection*. (See also [d3.render](#render)) The following are all equivalent:
 
-    d3.render(selection, data);
-    selection.render(data);
-    selection.call(d3.render, data);
+```Javascript
+d3.render(selection, data);
+selection.render(data);
+selection.call(d3.render, data);
+```
 
 <a name="transition_render" href="#transition_render">#</a> <i>transition</i>.<b>render</b>(<i>data[, options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L62)
 
 To render data onto a selection using a transaction use the following approach:
 
-    selection
-        .transaction()
-            .delay(100)
-            .duration(600)
-            .on("start", function() {
-                var transition = d3.active(this);
-                transition.render(data);
-            })
-    ;
+```Javascript
+selection
+    .transaction()
+        .delay(100)
+        .duration(600)
+        .on("start", function() {
+            var transition = d3.active(this);
+            transition.render(data);
+        })
+;
+```
 
 ### <a name="Render-filters">Render filters</a>
 The following list shows the standard render filters available. For usage see [renderFilter](#renderFilter).
@@ -305,62 +315,70 @@ The *specifier* argument for the **format** filter should be a (JSON) string con
 <a name="sortFields"></a>
 The *sortFields* argument for the **sort** filter should be a (JSON) string with comma separated list of field names. Each name can be prepended by `-` or `+` to indicate descending or ascending order (with ascending as default if none specified). Fields should be singular. It is currently not possible to specify "address.street" to access the field "street" of the address instance.
 
-    <!-- Sort by last name (ascending) and birth date (descending, ie youngest first) -->
-    <ul data-repeat='{{.|sort: "lastName,-birthDate"}}'>
-
+```HTML
+<!-- Sort by last name (ascending) and birth date (descending, ie youngest first) -->
+<ul data-repeat='{{.|sort: "lastName,-birthDate"}}'>
+```
+	
 ### <a name="Repeating-groups">Repeating groups</a>
 
 Repeating groups can only be applied on arrays. The array will be bound to the element when rendered. The group's child element will be appended conform the regular D3 enter/exit pattern. A copy of the child element will be rendered for every array element provided.
 
-    <ul id="my-list" data-repeat="{{.}}">
-       <li>{{.}}</li>
-    </ul>
-    <script>
-        var list = d3.select("#my-list").template();
+```HTML
+<ul id="my-list" data-repeat="{{.}}">
+   <li>{{.}}</li>
+</ul>
+<script>
+    var list = d3.select("#my-list").template();
 
-        // Render a list containing the numbers 1 to 4
-        list.render([ 1, 2, 3, 4 ]);
+    // Render a list containing the numbers 1 to 4
+    list.render([ 1, 2, 3, 4 ]);
 
-        // Render a list of words (replacing the numbers)
-        list.render([ "Hello", "I", "Just", "Called", "To", "Say", "I", "Love", "You" ]);
+    // Render a list of words (replacing the numbers)
+    list.render([ "Hello", "I", "Just", "Called", "To", "Say", "I", "Love", "You" ]);
 
-        // Render an empty list (no li element will be rendered anymore)
-        list.render([]);
-    </script>
+    // Render an empty list (no li element will be rendered anymore)
+    list.render([]);
+</script>
+```
 
 To use the index, position or length of the repeat group, use the special [repeat group filters](#Repeat-group-filters).
 
-    <!-- Insert index and position of element within repeat group using special filters -->
-    <ul data-repeat="{{.}}">
-        <li data-index="{{.|repeatIndex}}"><span>{{.|repeatPosition}}</span> - <span>{{.}}</span></li>
-    </ul>
+```HTML
+<!-- Insert index and position of element within repeat group using special filters -->
+<ul data-repeat="{{.}}">
+    <li data-index="{{.|repeatIndex}}"><span>{{.|repeatPosition}}</span> - <span>{{.}}</span></li>
+</ul>
+```
 
 ### <a name="Event-handlers">Event handlers</a>
 
 If event handlers are applied to a selection before a template is being created from it, these event handlers will be applied to the rendered result as well. When an event handler is called it will receive the normal D3 style arguments `d, i, nodes` and `this` will be set to the node receiving the event.
 
-    <ul id="lang-list" data-repeat="{{.}}">
-        <li>{{english}}</li>
-    </ul>
-    <script>
-        var list = d3.select("#lang-list");
+```HTML
+<ul id="lang-list" data-repeat="{{.}}">
+    <li>{{english}}</li>
+</ul>
+<script>
+    var list = d3.select("#lang-list");
 
-        // Add event handler
-        list.select("li").on("click", function(d) {
-		window.alert("'" + d.english + "' translates into '" + d.dutch + "' for the Dutch language");
-        });
+    // Add event handler
+    list.select("li").on("click", function(d) {
+	window.alert("'" + d.english + "' translates into '" + d.dutch + "' for the Dutch language");
+    });
         
-        // Create template now that the event handlers are applied
-        list.template();
+    // Create template now that the event handlers are applied
+    list.template();
 
-        // Render words
-        var words = [
-            { english: "one", dutch: "een" },
-            { english: "two", dutch: "twee" },
-            { english: "three", dutch: "drie" },
-            { english: "four", dutch: "vier" }
-        ];
-        list.render(words);
+    // Render words
+    var words = [
+        { english: "one", dutch: "een" },
+        { english: "two", dutch: "twee" },
+        { english: "three", dutch: "drie" },
+        { english: "four", dutch: "vier" }
+    ];
+    list.render(words);
 
-        // Clicking on a list element will show the alert specified 
-    </script>
+    // Clicking on a list element will show the alert specified 
+</script>
+```
