@@ -116,7 +116,7 @@ function parseFormatString(formatString) {
 function sortArray(arr, sortFieldsString) {
 
 	// Create array of sort fields
-	var sortFields = sortFieldsString ?
+	var sortFields = sortFieldsString && sortFieldsString.split ?
 		sortFieldsString.split(",").map(function(sortField) { return sortField.trim(); })
 		: null;
 
