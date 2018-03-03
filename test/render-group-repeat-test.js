@@ -49,7 +49,7 @@ tape("render() repeat array with object values", function(test) {
 });
 
 tape("render() repeat array with object values render twice", function(test) {
-	var document = jsdom("<div><span>{{title}}</span><div><div class='testable'><div data-repeat='{{words}}'><div class='word'><span class='dutch'>{{dutch}}</span> - <span class='english'>{{english}}</span> <span data-repeat='{{icons}}'><span class='icon'>{{.}}</span></span></div></div></div></div></div>");
+	var document = jsdom("<div><span>{{title}}</span><div><div class='testable'><div data-repeat='{{words}}'><div class='word'><span class='dutch'>{{dutch}}</span> - <span class='english'>{{english}}</span> <span data-repeat='{{icons}}'><span><span class='icon'><span>{{.}}</span></span></span></span></div></div></div></div></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template();
@@ -102,6 +102,9 @@ tape("render() repeat array with object values render twice", function(test) {
 			test.equal(d, secondData.words[i].icons[j], "Second content data bound");
 			test.equal(element.text(), secondData.words[i].icons[j], "Second content icons rendered");
 		});
+	});
+	selection.selectAll(".icon").each(function(d) {
+		test.notEqual(d, "I", "Second content data bound");
 	});
 
 	test.end();

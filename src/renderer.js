@@ -1,5 +1,6 @@
-import {matcher} from "d3-selection";
+import {select,matcher} from "d3-selection";
 import {FieldParser} from "./field-parser";
+import {SCOPE_BOUNDARY} from "./constants";
 
 // Globals
 var namedRenderFilters = {};
@@ -182,8 +183,15 @@ GroupRenderer.prototype.render = function(templateElement, transition) {
 			.remove()
 	;
 
-	// Render children (both new and updated)
+	// Update data of children (both new and updated)
 	var childElements = newElements.merge(joinedElements);
+	childElements.each(function() {
+		var childElement = select(this);
+		var data = childElement.datum();	// Elements receive data in root by enter/append above
+		copyDataToChildren(data, childElement);
+	});
+
+	// Render children
 	this.renderers.forEach(function(childRenderer) {
 		childRenderer.render(childElements, transition);
 	});
@@ -321,4 +329,15 @@ export function createDataFunction(parseFieldResult) {
 			return d;
 		}, initialValueFunction(d, i, nodes));
 	};
+}
+
+// Copy specified data onto all children of the element (recursively)
+var copyDataToChildren = function(data, element) {
+	element.selectAll(function() { return this.children; }).each(function() {
+		var childElement = select(this);
+		if(!childElement.classed(SCOPE_BOUNDARY)) {
+			childElement.datum(data);
+			copyDataToChildren(data, childElement);
+		}
+	});
 }

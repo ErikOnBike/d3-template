@@ -1,5 +1,6 @@
 import {select} from "d3-selection";
 import {GroupRenderer, RepeatRenderer, IfRenderer, WithRenderer, AttributeRenderer, StyleRenderer, TextRenderer} from "./renderer";
+import {SCOPE_BOUNDARY} from "./constants";
 
 // Defaults
 var defaults = {
@@ -13,7 +14,6 @@ var defaults = {
 var FIELD_SELECTOR_REG_EX = /^\s*\{\{\s*(.*)\s*\}\}\s*$/u;
 var ATTRIBUTE_REFERENCE_REG_EX = /^data-attr-(.*)$/iu;
 var STYLE_REFERENCE_REG_EX = /^data-style-(.*)$/iu;
-var SCOPE_BOUNDARY = "__d3TemplateScope";
 var EVENT_HANDLERS = "__on";
 
 // Globals
@@ -296,7 +296,7 @@ Template.prototype.addTextRenderers = function(element, owner) {
 	}
 };
 
-// Generate a unique selector within group scope (this selector might be copied into sibblings for repeating groups, so uniqueness is not absolute)
+// Generate a unique selector within group scope (this selector might be copied into siblings for repeating groups, so uniqueness is not absolute)
 var selectorIdCounter = 0;
 Template.prototype.generateUniqueSelector = function(element) {
 
