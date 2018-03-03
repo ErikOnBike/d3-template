@@ -48,6 +48,68 @@ tape("render() repeat array with object values", function(test) {
 	test.end();
 });
 
+tape("render() repeat array with object values render twice", function(test) {
+	var document = jsdom("<div><span>{{title}}</span><div><div class='testable'><div data-repeat='{{words}}'><div class='word'><span class='dutch'>{{dutch}}</span> - <span class='english'>{{english}}</span> <span data-repeat='{{icons}}'><span><span class='icon'><span>{{.}}</span></span></span></span></div></div></div></div></div>");
+	var node = document.querySelector("div");
+	var selection = d3.select(node);
+	selection.template();
+
+	var firstData = {
+		title: "First data",
+		words: [
+			{ dutch: "een", english: "one", icons: [ "I" ] },
+			{ dutch: "twee", english: "two", icons: [ "I", "I" ] },
+			{ dutch: "drie", english: "three", icons: [ "I", "I", "I" ] },
+			{ dutch: "vier", english: "four", icons: [ "I", "I", "I", "I" ] }
+		]
+	};
+	var secondData = {
+		title: "Second data",
+		words: [
+			{ dutch: "hallo", english: "hello", icons: [ "👋" ] },
+			{ dutch: "tot ziens", english: "goodbye", icons: [ "👋" ] },
+			{ dutch: "ja", english: "yes", icons: [ "👍", "👌" ] },
+			{ dutch: "nee", english: "no", icons: [ "👎" ] },
+			{ dutch: "gezellig", english: "...no translation available...", icons: [] }
+		]
+	};
+
+	selection.render(firstData);
+	selection.select(".testable").each(function(d) {
+		test.equal(d, firstData, "First data bound");
+	});
+	selection.selectAll(".word").each(function(d, i) {
+		var element = d3.select(this);
+		test.equal(element.select(".dutch").text(), firstData.words[i].dutch, "First content rendered as dutch text");
+		test.equal(element.select(".english").text(), firstData.words[i].english, "First content rendered as english text");
+		element.selectAll(".icon").each(function(d, j) {
+			var element = d3.select(this);
+			test.equal(d, firstData.words[i].icons[j], "First content data bound");
+			test.equal(element.text(), firstData.words[i].icons[j], "First content icons rendered");
+		});
+	});
+
+	selection.render(secondData);
+	selection.select(".testable").each(function(d) {
+		test.equal(d, secondData, "Second data bound");
+	});
+	selection.selectAll(".word").each(function(d, i) {
+		var element = d3.select(this);
+		test.equal(element.select(".dutch").text(), secondData.words[i].dutch, "Second content rendered as dutch text");
+		test.equal(element.select(".english").text(), secondData.words[i].english, "Second content rendered as english text");
+		element.selectAll(".icon").each(function(d, j) {
+			var element = d3.select(this);
+			test.equal(d, secondData.words[i].icons[j], "Second content data bound");
+			test.equal(element.text(), secondData.words[i].icons[j], "Second content icons rendered");
+		});
+	});
+	selection.selectAll(".icon").each(function(d) {
+		test.notEqual(d, "I", "Second content data bound");
+	});
+
+	test.end();
+});
+
 tape("render() repeat array with object values and event handlers on nested child", function(test) {
 	var document = jsdom("<div data-repeat='{{.}}'><div><span>{{.}}</span></div></div>");
 	var node = document.querySelector("div");

@@ -1,8 +1,6 @@
 import {select,matcher} from "d3-selection";
 import {FieldParser} from "./field-parser";
-
-// Constants
-var REPEAT_GROUP_INFO = "__repeatGroupInfo";
+import {SCOPE_BOUNDARY} from "./constants";
 
 // Globals
 var namedRenderFilters = {};
@@ -30,9 +28,9 @@ function Renderer(fieldSelectorAndFilters, elementSelector) {
 	// Parse field selector and (optional) filters
 	var parseResult = fieldParser.parse(fieldSelectorAndFilters);
 	if(parseResult.value === undefined) {
-		throw new SyntaxError("Failed to parse field selector and/or filter: " + parseResult.errorCode);
+		throw new SyntaxError("Failed to parse field selector and/or filter <" + fieldSelectorAndFilters + "> @ " + parseResult.index + ": " + parseResult.errorCode);
 	} else if(parseResult.index !== fieldSelectorAndFilters.length) {
-		throw new SyntaxError("Failed to parse field selector and/or filter: EXTRA_CHARACTERS");
+		throw new SyntaxError("Failed to parse field selector and/or filter <" + fieldSelectorAndFilters + "> @ " + parseResult.index + ": EXTRA_CHARACTERS");
 	}
 
 	// Set instance variables
@@ -170,22 +168,6 @@ GroupRenderer.prototype.render = function(templateElement, transition) {
 			.append(function() { return self.childElement.node().cloneNode(true); })
 	;
 
-	// Make data same for all children of the new elements
-	newElements.each(function(d, i, nodes) {
-		var newElement = select(this);
-		var data = newElement.datum();	// New elements receive data in root by enter/append above
-		copyDataToChildren(data, newElement);
-
-		// Copy repeat data onto element
-		if(self.isRepeatRenderer()) {
-			this[REPEAT_GROUP_INFO] = {
-				index: i,
-				position: i + 1,
-				length: nodes.length
-			};
-		}
-	});
-
 	// Add event handlers to new elements
 	Object.keys(this.eventHandlersMap).forEach(function(selector) {
 		var selection = newElements.filter(matcher(selector));
@@ -201,8 +183,15 @@ GroupRenderer.prototype.render = function(templateElement, transition) {
 			.remove()
 	;
 
-	// Render children (both new and updated)
+	// Update data of children (both new and updated)
 	var childElements = newElements.merge(joinedElements);
+	childElements.each(function() {
+		var childElement = select(this);
+		var data = childElement.datum();	// Elements receive data in root by enter/append above
+		copyDataToChildren(data, childElement);
+	});
+
+	// Render children
 	this.renderers.forEach(function(childRenderer) {
 		childRenderer.render(childElements, transition);
 	});
@@ -346,7 +335,9 @@ export function createDataFunction(parseFieldResult) {
 var copyDataToChildren = function(data, element) {
 	element.selectAll(function() { return this.children; }).each(function() {
 		var childElement = select(this);
-		childElement.datum(data);
-		copyDataToChildren(data, childElement);
+		if(!childElement.classed(SCOPE_BOUNDARY)) {
+			childElement.datum(data);
+			copyDataToChildren(data, childElement);
+		}
 	});
 }

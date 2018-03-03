@@ -1,6 +1,6 @@
 # d3-template
 
-*(This version has not been tested on V3 or earlier versions of D3)*
+*(This version is meant for V4 and has not been tested on V3 or earlier versions of D3)*
 
 d3-template is a D3 plugin to support templates using D3's data binding mechanism.  This means you can use D3's familiar functionality directly on or with your templates. Apply transactions or add event handlers to template elements with access to the bound data. Render new data on a template thereby updating attributes, styles and text. Also new elements are added and superfluous elements are removed from repeating groups (D3's enter/exit). This works for both HTML as well as SVG elements. Templates will normally be acting on the live DOM, but can be used on virtual DOM's (like [jsdom](https://github.com/jsdom/jsdom)) as well.
 
@@ -16,12 +16,13 @@ The following information is available:
 * [Repeating groups](#Repeating-groups)
 * [Event handlers](#Event-handlers)
 * [Examples](examples/README.md)
+* [License](LICENSE)
 
 ## <a name="Usage">Usage</a>
 
 Templates look like they do in most other templating tools: add references to data by placing them within curly braces. Standard as well as custom filters are supported.
 
-The general usage is probably best described by an example:
+The general usage is probably best described by an example (see example on [bl.ocks.org](https://bl.ocks.org/ErikOnBike/f36ce2b4c88ef525d0cfe34a766d8067)):
 
 ```HTML
 <div class="person">
@@ -95,7 +96,7 @@ When rendering data onto a template which is already rendered, the new data will
 
 ## <a name="Installing">Installing</a>
 
-To install via [NPM](https://www.npmjs.com) use `npm install d3-template-plugin`. Or install using [unpkg](https://unpkg.com/).
+To install via [NPM](https://www.npmjs.com) use `npm install d3-template-plugin`. Or use/install directly using [unpkg](https://unpkg.com/).
 
     <script src="https://unpkg.com/d3-template-plugin/build/d3-template.min.js"></script>
 
@@ -116,7 +117,7 @@ The following *features* are present:
 * Repeating and conditional groups (through `data-repeat` and `data-if` attribute).
 * A scope group similar to the Javascript `with` statement (through `data-with` attribute) for convenience (but beware, there is no 'parent' operator).
 * Possibility to overwrite the template attribute names with custom names. If for example `repeat`, `if` and `with` is preferred over de long names, this can be specified when creating a template. Beware that such custom attributes are not compliant with HTML5 or SVG specifications and therefore browser behaviour may be unpredictable.
-* Standard filters (like `upper`, `lower`, `substr`, `prefix`, `subarr`, `sort`, `numberFormat`, `timeFormat`, ...).
+* Standard filters (like `upper`, `lower`, `substr`, `prefix`, `subarr`, `sort`, `numberFormat`, `timeFormat`, ...) For the full list see [render filters](#Render-filters).
 * Custom filters can be added by calling:
 
     ```Javascript
@@ -151,12 +152,13 @@ The following known *limitations* are present:
     <div data-style-width='{{width|unit: "px"}}'>...</div>
 
     <!-- This will not be recognised by d3-template -->
-    <span>{{.}} jobs</span>
+    <span>{{jobCount}} jobs</span>
 
     <!-- Use one of the following instead -->
-    <span>{{.|postfix: " jobs"}}</span>
-    <span><span>{{.}}</span> jobs</span>
-    <span>{{.}}</span> <span>jobs</span>
+    <span>{{jobCount|postfix: " jobs"}}</span>
+    <span>{{jobCount|format: "{.} jobs"}}</span>
+    <span><span>{{jobCount}}</span> jobs</span>
+    <span>{{jobCount}}</span> <span>jobs</span>
     ```
 
   See [renderFilter](#renderFilter) for an explanation why the single quotes are required in the example above.
@@ -185,7 +187,10 @@ The following known *limitations* are present:
 
     <!-- Use the following (or something similar) instead -->
     <div data-repeat="{{stats}}">
-        <span>Requests: <span>{{requests}}</span> (per month)</span>
+        <span>{{requests|format: "Requests: {.} (per month)"}}</span>
+        <!-- Or
+        <span>{{.|format: "Requests: {requests} (per month)"}}</span>
+        -->
     </span>
     ```
 
@@ -227,7 +232,7 @@ The filter function *filterFunc* is called during rendering with the data bound 
         });
     </script>
 
-Arguments can only be literal values. Removing the quotes around `"arg1"` or `"lowerCase"` will result in an exception since these will become references instead of string literals. The arguments (everything after the colon) are parsed as one JSON array. This means literal values like `true`, `false` and `null` are allowed and strings are surrounded by double quotes. Use standard HTML attribute escaping with %34 for a double and %39 for a single quote if both are needed in the same filter in an attribute.
+Arguments specified within the template can only be literal (JSON) values. Removing the quotes around `"arg1"` or `"lowerCase"` will result in an exception since these will become references instead of string literals. The arguments (everything after the colon) are parsed as a list of comma separated JSON values. This means literal values like `true`, `false` and `null` are allowed and strings are surrounded by double quotes (see also [JSON](http://json.org)). Use standard HTML attribute escaping with %34 for a double and %39 for a single quote if both are needed in the same filter in an attribute. An easy way to be able to use double quotes within attributes, is to define the attributes with single quotes (although double quotes are the predominant variant).
 
 <a name="selection_template" href="#selection_template">#</a> <i>selection</i>.<b>template</b>(<i>[options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L30)
 
@@ -264,32 +269,32 @@ The following list shows the standard render filters available. For usage see [r
 
   | Filter | Usage |
   ---------|-------|
-  | *Generic filters* | *Data can be of any type* |
+  | | *Generic filters (data can be of any type)* |
   | **default**: *defaultValue* | Answer *defaultValue* if the data is `null` or `undefined`, otherwise data itself |
   | **emptyDefault**: *defaultValue* | Answer *defaultValue* if the data is falsy or has length 0, otherwise data itself |
   | **equals**: *otherValue* | Answer a boolean as the result of comparing data with *otherValue* using `===` |
   | **length** | Answer the length of the data (valid for Strings and Arrays) |
   | **format**: *specifier* | Answer the data formatted using [*specifier*](#formatSpecifier) |
-  | *String filters* | *Data must be a [String](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String)* |
+  | | *String filters (data must be a [String](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String))* |
   | **upper** | Answer the data converted to uppercase using [toLocaleUpperCase](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/toLocaleUpperCase) |
   | **lower** | Answer the data converted to lowercase using [toLocaleLowerCase](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/toLocaleLowerCase) |
   | **prefix**: *prefix* | Answer *prefix* and the data concatenated as a string |
   | **postfix**: *postfix* | Answer the data and *postfix* concatenated as a string |
   | **substr**: *from\[, length \]* | Answer the substring of data using [substr](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/substr) |
-  | *Numeric filters* | *Data must be a number* |
+  | | *Numeric filters (data must be a number)* |
   | **numberFormat**: *specifier* | Answer the data formatted using [*specifier*](https://github.com/d3/d3-format#locale_format) |
   | *Date/time filters* | *Data must be a [Date](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date)* |
   | **timeFormat**: *specifier* | Answer the data formatted using [*specifier*](https://github.com/d3/d3-time-format#locale_format) |
-  | *Boolean filters* | *Data must be a boolean* |
+  | | *Boolean filters (data must be a boolean)* |
   | **not** | Answer the negation of data |
-  | *Array filters* | *Data must be an [Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)* |
+  | | *Array filters (data must be an [Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array))* |
   | **subarr**: *from\[, length \]* | Answer the subarray of data similar to **substr** filter above |
   | **sort**: *sortFields* | Answer data sorted as specified by [*sortFields*](#sortFields) |
   | **shuffle** | Answer data in random order |
-  | *Unit and conversion filters* ||
+  | | *Unit and conversion filters* |
   | **unit**: *unit* | Answer the data (numeric) and *unit* concatenated as a string |
   | **color2rgb** | Answer the data (a [d3.color](https://github.com/d3/d3-color#color)) as a rgb string "ie rgb(127, 0, 255)" |
-  | *<a name="Repeat-group-filters">Repeat group filters</a>* ||
+  | | *<a name="Repeat-group-filters">Repeat group filters</a>* |
   | **repeatIndex** | Answer the index (starts at 0) of the current element within the enclosing repeat group (filter data is ignored) |
   | **repeatPosition** | Answer the position (starts at 1) of the current element within the enclosing repeat group (filter data is ignored) |
   | **repeatLength** | Answer the length of the enclosing repeat group (filter data is ignored) |
@@ -298,7 +303,7 @@ The following list shows the standard render filters available. For usage see [r
 The *specifier* argument for the **format** filter should be a (JSON) string containing template references with optional filter references. For example: `"translate({x},{y})"` or `"Value: {value|default: \"<unknown>\"}"`.
 
 <a name="sortFields"></a>
-The *sortFields* argument for the **sort** filter should be a string with comma separated list of field names. Each name can be prepended by `-` or `+` to indicate descending or ascending order (with ascending as default if none specified). Fields should be singular. It is currently not possible to specify "address.street" to access the field "street" of the address instance.
+The *sortFields* argument for the **sort** filter should be a (JSON) string with comma separated list of field names. Each name can be prepended by `-` or `+` to indicate descending or ascending order (with ascending as default if none specified). Fields should be singular. It is currently not possible to specify "address.street" to access the field "street" of the address instance.
 
     <!-- Sort by last name (ascending) and birth date (descending, ie youngest first) -->
     <ul data-repeat='{{.|sort: "lastName,-birthDate"}}'>
