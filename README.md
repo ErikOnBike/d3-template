@@ -1,6 +1,6 @@
 # d3-template
 
-*(This version is meant for V4 and has not been tested on V3 or earlier versions of D3)*
+*(This version is meant for V4/V5 and has not been tested on V3 or earlier versions of D3)*
 
 d3-template is a D3 plugin to support templates using D3's data binding mechanism.  This means you can use D3's familiar functionality directly on or with your templates. Apply transactions or add event handlers to template elements with access to the bound data. Render new data on a template thereby updating attributes, styles and text. Also new elements are added and superfluous elements are removed from repeating groups (D3's enter/exit). This works for both HTML as well as SVG elements. Templates will normally be acting on the live DOM, but can be used on virtual DOM's (like [jsdom](https://github.com/jsdom/jsdom)) as well.
 
