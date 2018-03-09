@@ -286,6 +286,36 @@ WithRenderer.prototype.getData = function() {
 	return function(d, i, nodes) { return [ Renderer.prototype.getData.call(self)(d, i, nodes) ]; };
 };
 
+// ImportRenderer - Renders data on imported template
+export function ImportRenderer(elementSelector, template, importTemplateId) {
+	Renderer.call(this, ".", elementSelector);
+	this.template = template;
+	this.importTemplateId = importTemplateId;
+}
+
+ImportRenderer.prototype = Object.create(Renderer.prototype);
+ImportRenderer.prototype.constructor = ImportRenderer;
+ImportRenderer.prototype.render = function(templateElement, transition) {
+
+	// Import/clone template
+	var element = this.getElement(templateElement);
+	var self = this;
+	if(element.selectAll(function() { return this.children; }).size() === 0) {
+		element
+			.append(function() {
+				return select("#" + self.importTemplateId).node().cloneNode(true);
+			})
+			.attr("id", null)	// Remove identity to prevent duplicate id's
+		;
+	}
+
+	// Render imported/cloned template
+	element.each(function(d) {
+		var importedElement = select(this);
+		self.template.render(d, importedElement, transition);
+	});
+};
+
 // Helper functions
 
 // Apply specified event handlers onto selection

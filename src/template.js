@@ -1,5 +1,5 @@
 import {select} from "d3-selection";
-import {GroupRenderer, RepeatRenderer, IfRenderer, WithRenderer, AttributeRenderer, StyleRenderer, TextRenderer} from "./renderer";
+import {GroupRenderer, RepeatRenderer, IfRenderer, WithRenderer, ImportRenderer, AttributeRenderer, StyleRenderer, TextRenderer} from "./renderer";
 import {SCOPE_BOUNDARY} from "./constants";
 
 // Defaults
@@ -7,7 +7,8 @@ var defaults = {
 	elementSelectorAttribute: "data-template",
 	repeatAttribute: "data-repeat",
 	ifAttribute: "data-if",
-	withAttribute: "data-with"
+	withAttribute: "data-with",
+	importAttribute: "data-import"
 };
 
 // Constants
@@ -17,6 +18,7 @@ var STYLE_REFERENCE_REG_EX = /^data-style-(.*)$/iu;
 var EVENT_HANDLERS = "__on";
 
 // Globals
+var templates = {};
 var namedTemplates = {};
 
 // Main functions
@@ -46,8 +48,14 @@ export function selection_template(options) {
 		template.addRenderers(element, template);
 
 		// Store template 
-		var templateName = element.attr(options.elementSelectorAttribute);
-		namedTemplates[templateName] = template;
+		var templateSelector = element.attr(options.elementSelectorAttribute);
+		templates[templateSelector] = template;
+
+		// Store named templates separately
+		var templateId = element.attr("id");
+		if(templateId) {
+			namedTemplates[templateId] = template;
+		}
 	});
 
 	return this;
@@ -70,11 +78,11 @@ export function selection_render(data, options) {
 		var element = select(this);
 
 		// Retrieve template for element
-		var templateName = element.attr(options.elementSelectorAttribute);
-		if(!templateName) {
+		var templateSelector = element.attr(options.elementSelectorAttribute);
+		if(!templateSelector) {
 			throw new Error("Method render() called on non-template selection.");
 		}
-		var template = namedTemplates[templateName];
+		var template = templates[templateSelector];
 
 		// Render data on template
 		template.render(data, element, transition);
@@ -124,6 +132,7 @@ Template.prototype.render = function(data, element, transition) {
 Template.prototype.addRenderers = function(element, owner) {
 
 	// Add renderers for groups, attributes and text (order is important!)
+	this.addImportRenderers(element, owner);
 	this.addGroupRenderers(element, owner);
 	this.addAttributeRenderers(element, owner);
 	this.addTextRenderers(element, owner);
@@ -134,6 +143,22 @@ Template.prototype.addRenderers = function(element, owner) {
 		var childElement = select(this);
 		self.addRenderers(childElement, owner);
 	});
+};
+
+// Add import renderers for the specified element to specified owner
+Template.prototype.addImportRenderers = function(element, owner) {
+
+	// Handle import
+	var importTemplateId = element.attr(this.options.importAttribute);
+	if(importTemplateId) {
+
+		// Add import renderer
+		owner.addRenderer(new ImportRenderer(
+			this.generateUniqueSelector(element),
+			namedTemplates[importTemplateId],
+			importTemplateId
+		));
+	}
 };
 
 // Add group renderers (like repeat, if, with) for the specified element to specified owner
