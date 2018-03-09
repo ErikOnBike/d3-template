@@ -21,19 +21,19 @@ var namedTemplates = {};
 
 // Main functions
 
-// Create template from the specified selection
-export function template(selection, options) {
-	return selection.template(options);
-}
-
 // Create template from receiver (this method will be added to the d3 selection prototype)
 export function selection_template(options) {
+	return template(this, options);
+}
+
+// Create template from the specified selection
+export function template(selection, options) {
 
 	// Decide to use options or defaults
 	options = Object.assign({}, defaults, options || {});
 
 	// Create templates from the current selection
-	this.each(function() {
+	selection.each(function() {
 		var element = select(this);
 
 		// Create template using specified identification mechanism
@@ -50,23 +50,23 @@ export function selection_template(options) {
 		namedTemplates[templateName] = template;
 	});
 
-	return this;
-}
-
-// Render data on specified selection (selection should consist of a template)
-export function render(selection, data, options) {
-	return selection.render(data, options);
+	return selection;
 }
 
 // Render data on receiver (ie, a selection since this method will be added to the d3 selection prototype)
 export function selection_render(data, options) {
+	return render(this, data, options);
+}
+
+// Render data on specified selection (selection should consist of a template)
+export function render(selectionOrTransition, data, options) {
 
 	// Decide to use options or defaults
 	options = Object.assign({}, defaults, options || {});
 
 	// Render templates in the current selection
-	var transition = this.duration !== undefined ? this : null;
-	this.each(function() {
+	var transition = selectionOrTransition.duration !== undefined ? selectionOrTransition : null;
+	selectionOrTransition.each(function() {
 		var element = select(this);
 
 		// Retrieve template for element
@@ -80,7 +80,7 @@ export function selection_render(data, options) {
 		template.render(data, element, transition);
 	});
 
-	return this;
+	return selectionOrTransition;
 }
 
 // Template class
