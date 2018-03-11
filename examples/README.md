@@ -11,3 +11,4 @@
 
 ## Other
 * [Bubble Chart](http://bl.ocks.org/ErikOnBike/2afe79ba9a5ee7a6a86a0c3fe04718a7) - Rewrite of Mike's Bubble Chart using a template
+* [Bullet Charts](https://bl.ocks.org/ErikOnBike/dc95a68532f111da923ae533fc7d54d3) - Rewrite of Mike's Bullet Charts using a template
