@@ -88,12 +88,29 @@ tape("render() attribute rendered with nested object value", function(test) {
 	test.end();
 });
 
+tape("render() attribute rendered with nested object value with quoted fields", function(test) {
+	var document = jsdom("<div><span data-value='{{\"person\".name.\"first\"}}'>Some text here</span></div>");
+	var node = document.querySelector("div");
+	var selection = d3.select(node);
+	selection.template().render({ person: { interests: [ "some", "code", "development" ], name: { last: "Stel", first: "Erik" } } });
+	test.equal(selection.select("span").attr("data-value"), "Erik", "First name attribute value is rendered");
+	test.end();
+});
+
 tape("render() attribute rendered with nested object value with missing fields", function(test) {
 	var document = jsdom("<div><span data-value='{{person.name.first}}'>Some text here</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template().render({ person: { interests: [ "some", "code", "development" ] } });
 	test.equal(selection.select("span").attr("data-value"), null, "Non-existing field removes rendering");
+	test.end();
+});
+
+tape("render() attribute rendered with nested object value with error in fields", function(test) {
+	var document = jsdom("<div><span data-value='{{\"person.name.first}}'>Some text here</span></div>");
+	var node = document.querySelector("div");
+	var selection = d3.select(node);
+	test.throws(function() { selection.template(); }, /INVALID_STRING/, "Illegal field (missing quotes)");
 	test.end();
 });
 
@@ -168,5 +185,17 @@ tape("render() non-group with filter using i, nodes", function(test) {
 	});
 	selection.template().render("hello");
 	test.equal(selection.select("span").attr("data-value"), "hello,0,1", "Filter on non-group gives i and nodes.");
+	test.end();
+});
+
+tape("render() non-group with filter using i, nodes", function(test) {
+	var document = jsdom("<div><span data-value='{{.|extraParams: { \"a\": 1, \"b\": 2, \"c\": [ 1, 2 ] }}}'>Some text here</span></div>");
+	var node = document.querySelector("div");
+	var selection = d3.select(node);
+	d3.renderFilter("extraParams", function(d, obj, i, nodes) {
+		return d + JSON.stringify(obj);
+	});
+	selection.template().render("hello");
+	test.equal(selection.select("span").attr("data-value"), "hello{\"a\":1,\"b\":2,\"c\":[1,2]}", "Filter with object.");
 	test.end();
 });
