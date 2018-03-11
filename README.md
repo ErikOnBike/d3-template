@@ -248,7 +248,7 @@ The tween filter function should return a function accepting a single parameter 
 If a tween filter is specified within a template, but the render is performed without an active transition then the final tween result is shown directly (ie the value returned by calling the tween filter with value `1.0`).
 
 ```HTML
-<div data-style-background-color="{{fill|fillTween}}">
+<div id="tweenBlock" data-style-background-color="{{fill|fillTween}}">
     <span>{{text|upper|textTween}}</span>
 </div>
 <!-- The following will not work because the tween filter is not the last filter
@@ -263,6 +263,17 @@ If a tween filter is specified within a template, but the render is performed wi
             return d.substr(0, Math.floor(t * d.length));
         };
     });
+
+    // ...
+    d3.selection("#tweenBlock")
+        .template()
+        .transition()
+            .delay(500)
+            .duration(1000)
+            .on("start", function() {
+                d3.active().render({ fill: "red", text: "Hello world" });
+            })
+    ;
 </script>
 ```
 
