@@ -243,9 +243,9 @@ Arguments specified within the template can only be literal (JSON) values. Remov
 
 Retrieve or register a tween filter for the specified *name*. If *tweenFilterFunc* is not specified the current tween filter named *name* is returned. If *tweenFilterFunc* is `null` an already registered tween filter for *name* is removed. If *tweenFilterFunc* is a function it is registered under *name* possibly replacing an existing tween filter. If *tweenFilterFunc* is not a function (nor null) an exception is thrown.
 
-The tween filter function should return a function accepting a single parameter `t` in accordance with the regular tween functions [attrTween](https://github.com/d3/d3-transition#transition_attrTween), [styleTween](https://github.com/d3/d3-transition#transition_styleTween) and/or [tween](https://github.com/d3/d3-transition#transition_tween). A tween filter can only be applied as the last filter in a definition (within a template). There are currently no default tween filters, because required behaviour is often very specific.
+A tween filter is to be used in combination with rendering on a [transaction](#transition_render). If a tween filter is specified within a template, but the render is performed without an active transition then the final tween result is shown directly (ie the value returned by calling the tween filter with value `1.0`).
 
-If a tween filter is specified within a template, but the render is performed without an active transition then the final tween result is shown directly (ie the value returned by calling the tween filter with value `1.0`).
+The tween filter function should return a function accepting a single parameter `t` in accordance with the regular tween functions [attrTween](https://github.com/d3/d3-transition#transition_attrTween), [styleTween](https://github.com/d3/d3-transition#transition_styleTween) and/or [tween](https://github.com/d3/d3-transition#transition_tween). A tween filter can only be applied as the last filter in a definition (within a template). There are currently no default tween filters, because required behaviour is often very specific.
 
 ```HTML
 <div id="tweenBlock" data-style-background-color="{{fill|fillTween}}">
@@ -264,7 +264,6 @@ If a tween filter is specified within a template, but the render is performed wi
         };
     });
 
-    // ...
     d3.selection("#tweenBlock")
         .template()
         .transition()
