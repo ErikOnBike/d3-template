@@ -2,7 +2,7 @@
 
 *(This version is meant for V4/V5 and has not been tested on V3 or earlier versions of D3)*
 
-d3-template is a D3 plugin to support templates using D3's data binding mechanism.  This means you can use D3's familiar functionality directly on or with your templates. Apply transactions or add event handlers to template elements with access to the bound data. Render new data on a template thereby updating attributes, styles and text. Also new elements are added and superfluous elements are removed from repeating groups (D3's enter/exit). This works for both HTML as well as SVG elements. Templates will normally be acting on the live DOM, but can be used on virtual DOM's (like [jsdom](https://github.com/jsdom/jsdom)) as well.
+d3-template is a D3 plugin to support templates using D3's data binding mechanism.  This means you can use D3's familiar functionality directly on or with your templates. Apply transitions or add event handlers to template elements with access to the bound data. Render new data on a template thereby updating attributes, styles and text. Also new elements are added and superfluous elements are removed from repeating groups (D3's enter/exit). This works for both HTML as well as SVG elements. Templates will normally be acting on the live DOM, but can be used on virtual DOM's (like [jsdom](https://github.com/jsdom/jsdom)) as well.
 
 If you are looking for existing templating support like Handlebars, Mustache or Nunjucks have a look at [d3-templating](https://github.com/jkutianski/d3-templating).
 
@@ -243,7 +243,7 @@ Arguments specified within the template can only be literal (JSON) values. Remov
 
 Retrieve or register a tween filter for the specified *name*. If *tweenFilterFunc* is not specified the current tween filter named *name* is returned. If *tweenFilterFunc* is `null` an already registered tween filter for *name* is removed. If *tweenFilterFunc* is a function it is registered under *name* possibly replacing an existing tween filter. If *tweenFilterFunc* is not a function (nor null) an exception is thrown.
 
-A tween filter is to be used in combination with rendering on a [transaction](#transition_render). If a tween filter is specified within a template, but the render is performed without an active transition then the final tween result is shown directly (ie the value returned by calling the tween filter with value `1.0`).
+A tween filter is to be used in combination with rendering on a [transition](#transition_render). If a tween filter is specified within a template, but the render is performed without an active transition then the final tween result is shown directly (ie the value returned by calling the tween filter with value `1.0`).
 
 The tween filter function should return a function accepting a single parameter `t` in accordance with the regular tween functions [attrTween](https://github.com/d3/d3-transition#transition_attrTween), [styleTween](https://github.com/d3/d3-transition#transition_styleTween) and/or [tween](https://github.com/d3/d3-transition#transition_tween). A tween filter can only be applied as the last filter in a definition (within a template). There are currently no default tween filters, because required behaviour is often very specific.
 
@@ -298,11 +298,11 @@ selection.call(d3.render, data);
 
 <a name="transition_render" href="#transition_render">#</a> <i>transition</i>.<b>render</b>(<i>data[, options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L62)
 
-To render data onto a selection using a transaction use the following approach:
+To render data onto a selection using a transition use the following approach:
 
 ```Javascript
 selection
-    .transaction()
+    .transition()
         .delay(100)
         .duration(600)
         .on("start", function() {
