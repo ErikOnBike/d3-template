@@ -7,21 +7,27 @@ var namedRenderFilters = {};
 var fieldParser = new FieldParser();
 
 // Main function
-export function renderFilter(name, filterFunc, isTweenFilter) {
-	if(arguments.length >= 2) {
-		if(filterFunc === null) {
-			delete namedRenderFilters[name];
-		} else {
-			if(typeof filterFunc !== "function") {
-				throw new Error("No function specified when registering renderFilter: " + name);
-			}
-			if(isTweenFilter) {
-				filterFunc.isTweenFunction = true;
-			}
-			namedRenderFilters[name] = filterFunc;
-		}
-	} else {
+export function renderFilter(name, filterFunc) {
+	return renderFilterPrivate(name, filterFunc, false);
+}
+
+export function renderTweenFilter(name, tweenFilterFunc) {
+	return renderFilterPrivate(name, tweenFilterFunc, true);
+}
+
+function renderFilterPrivate(name, filterFunc, isTweenFilter) {
+	if(filterFunc === null) {
+		delete namedRenderFilters[name];
+	} else if(filterFunc === undefined) {
 		return namedRenderFilters[name];
+	} else {
+		if(typeof filterFunc !== "function") {
+			throw new Error("No function specified when registering renderFilter: " + name);
+		}
+		if(isTweenFilter) {
+			filterFunc.isTweenFunction = true;
+		}
+		namedRenderFilters[name] = filterFunc;
 	}
 }
 
@@ -97,15 +103,16 @@ TextRenderer.prototype.render = function(templateElement, transition) {
 		if(transition) {
 			element.tween("text", function(d, i, nodes) {
 				var tweenElement = select(this);
+				var self = this;
 				return function(t) {
-					tweenElement.text(dataFunction(d, i, nodes)(t));
+					tweenElement.text(dataFunction.call(self, d, i, nodes)(t));
 				};
 			});
 		} else {
 
 			// If no transition is present, use the final state (t = 1.0)
 			element.text(function(d, i, nodes) {
-				return dataFunction(d, i, nodes)(1.0);
+				return dataFunction.call(this, d, i, nodes)(1.0);
 			});
 		}
 	} else {
