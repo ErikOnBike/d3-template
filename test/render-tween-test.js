@@ -6,14 +6,14 @@ tape("render() tween function without transition", function(test) {
 	var document = jsdom("<div data-style-color='{{color|colorTween}}' data-attr-title='{{text|textTween}}'><span>{{text|textTween}}</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
-	d3.renderFilter("colorTween", function(d) {
+	d3.renderTweenFilter("colorTween", function(d) {
 		return d3.interpolateRgb("white", d);
-	}, true);
-	d3.renderFilter("textTween", function(d) {
+	});
+	d3.renderTweenFilter("textTween", function(d) {
 		return function(t) {
 			return d.substr(0, Math.floor(t * d.length));
 		};
-	}, true);
+	});
 	selection.template().render({ color: "blue", text: "Hello world" });
 	test.equal(selection.style("color"), "rgb(0, 0, 255)", "Style 'color' is rendered on element");
 	test.equal(selection.attr("title"), "Hello world", "Attribute is rendered on element");
@@ -25,19 +25,19 @@ tape("render() tween function with transition", function(test) {
 	var document = jsdom("<div data-style-color='{{color|colorTween}}' data-attr-title='{{text|textTween}}' data-t='{{.|valueT}}'><span>{{text|textTween}}</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
-	d3.renderFilter("colorTween", function(d) {
+	d3.renderTweenFilter("colorTween", function(d) {
 		return d3.interpolateRgb("white", d);
-	}, true);
-	d3.renderFilter("textTween", function(d) {
+	});
+	d3.renderTweenFilter("textTween", function(d) {
 		return function(t) {
 			return d.substr(0, Math.floor(t * d.length));
 		};
-	}, true);
-	d3.renderFilter("valueT", function() {
+	});
+	d3.renderTweenFilter("valueT", function() {
 		return function(t) {
 			return t;
 		};
-	}, true);
+	});
 	selection
 		.template()
 		.transition()

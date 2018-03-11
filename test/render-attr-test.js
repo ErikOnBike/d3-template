@@ -192,7 +192,7 @@ tape("render() non-group with filter using i, nodes", function(test) {
 	var document = jsdom("<div><span data-value='{{.|extraParams: { \"a\": 1, \"b\": 2, \"c\": [ 1, 2 ] }}}'>Some text here</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
-	d3.renderFilter("extraParams", function(d, obj, i, nodes) {
+	d3.renderFilter("extraParams", function(d, obj) {
 		return d + JSON.stringify(obj);
 	});
 	selection.template().render("hello");
