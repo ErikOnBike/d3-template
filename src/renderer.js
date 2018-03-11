@@ -11,8 +11,8 @@ export function renderFilter(name, filterFunc) {
 	return renderFilterPrivate(name, filterFunc, false);
 }
 
-export function renderTweenFilter(name, filterFunc) {
-	return renderFilterPrivate(name, filterFunc, true);
+export function renderTweenFilter(name, tweenFilterFunc) {
+	return renderFilterPrivate(name, tweenFilterFunc, true);
 }
 
 function renderFilterPrivate(name, filterFunc, isTweenFilter) {
