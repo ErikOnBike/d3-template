@@ -237,6 +237,8 @@ The filter function *filterFunc* is called during rendering with the data bound 
 </script>
 ```
 
+Arguments specified within the template can only be literal (JSON) values. Removing the quotes around `"arg1"` or `"lowerCase"` will result in an exception since these will become references instead of string literals. The arguments (everything after the colon) are parsed as a list of comma separated JSON values. This means literal values like `true`, `false` and `null` are allowed and strings are surrounded by double quotes (see also [JSON](http://json.org)). Use standard HTML attribute escaping with %34 for a double and %39 for a single quote if both are needed in the same filter in an attribute. An easy way to be able to use double quotes within attributes, is to define the attributes with single quotes (although double quotes are the predominant variant).
+
 <a name="renderTweenFilter" href="#renderTweenFilter">#</a> d3.<b>renderTweenFilter</b>(<i>name[, tweenFilterFunc]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/renderer.js#L14)
 
 Retrieve or register a tween filter for the specified *name*. If *tweenFilterFunc* is not specified the current tween filter named *name* is returned. If *tweenFilterFunc* is `null` an already registered tween filter for *name* is removed. If *tweenFilterFunc* is a function it is registered under *name* possibly replacing an existing tween filter. If *tweenFilterFunc* is not a function (nor null) an exception is thrown.
@@ -263,8 +265,6 @@ If a tween filter is specified within a template, but the render is performed wi
     });
 </script>
 ```
-
-Arguments specified within the template can only be literal (JSON) values. Removing the quotes around `"arg1"` or `"lowerCase"` will result in an exception since these will become references instead of string literals. The arguments (everything after the colon) are parsed as a list of comma separated JSON values. This means literal values like `true`, `false` and `null` are allowed and strings are surrounded by double quotes (see also [JSON](http://json.org)). Use standard HTML attribute escaping with %34 for a double and %39 for a single quote if both are needed in the same filter in an attribute. An easy way to be able to use double quotes within attributes, is to define the attributes with single quotes (although double quotes are the predominant variant).
 
 <a name="selection_template" href="#selection_template">#</a> <i>selection</i>.<b>template</b>(<i>[options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L25)
 
