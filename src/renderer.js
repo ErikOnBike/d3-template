@@ -76,11 +76,6 @@ Renderer.prototype.isGroupRenderer = function() {
 	return false;
 };
 
-// Answer whether receiver is RepeatRenderer
-Renderer.prototype.isRepeatRenderer = function() {
-	return false;
-};
-
 // TextRenderer - Renders data as text of element
 export function TextRenderer(fieldSelector, elementSelector) {
 	Renderer.call(this, fieldSelector, elementSelector);
@@ -312,11 +307,6 @@ export function RepeatRenderer(fieldSelector, elementSelector, childElement) {
 
 RepeatRenderer.prototype = Object.create(GroupRenderer.prototype);
 RepeatRenderer.prototype.constructor = RepeatRenderer;
-
-// Answer whether group renderer is RepeatRenderer
-RepeatRenderer.prototype.isRepeatRenderer = function() {
-	return true;
-};
 
 // IfRenderer - Renders data to a conditional group of elements
 export function IfRenderer(fieldSelector, elementSelector, childElement) {
