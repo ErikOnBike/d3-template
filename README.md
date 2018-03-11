@@ -241,7 +241,9 @@ The filter function *filterFunc* is called during rendering with the data bound 
 
 Retrieve or register a tween filter for the specified *name*. If *tweenFilterFunc* is not specified the current tween filter named *name* is returned. If *tweenFilterFunc* is `null` an already registered tween filter for *name* is removed. If *tweenFilterFunc* is a function it is registered under *name* possibly replacing an existing tween filter. If *tweenFilterFunc* is not a function (nor null) an exception is thrown.
 
-The tween filter function should return a function accepting a single parameter `t` in accordance with the regular tween functions [attrTween](https://github.com/d3/d3-transition#transition_attrTween), [styleTween](https://github.com/d3/d3-transition#transition_styleTween) and/or [tween](https://github.com/d3/d3-transition#transition_tween). A tween filter can only be applied as the last filter in a definition. There are currently no default tween filters, because required behaviour is often very specific.
+The tween filter function should return a function accepting a single parameter `t` in accordance with the regular tween functions [attrTween](https://github.com/d3/d3-transition#transition_attrTween), [styleTween](https://github.com/d3/d3-transition#transition_styleTween) and/or [tween](https://github.com/d3/d3-transition#transition_tween). A tween filter can only be applied as the last filter in a definition (within a template). There are currently no default tween filters, because required behaviour is often very specific.
+
+If a tween filter is specified within a template, but the render is performed without an active transition then the final tween result is shown directly (ie the value returned by calling the tween filter with value `1.0`).
 
 ```HTML
 <div data-style-background-color="{{fill|fillTween}}">
