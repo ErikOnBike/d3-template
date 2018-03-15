@@ -15,7 +15,8 @@ var FIELD_SELECTOR_REG_EX = /^\s*\{\{\s*(.*)\s*\}\}\s*$/u;
 var ATTRIBUTE_REFERENCE_REG_EX = /^data-attr-(.*)$/u;
 var STYLE_REFERENCE_REG_EX = /^data-style-(.*)$/u;
 var EVENT_HANDLERS = "__on";
-var SVG_CAMEL_CASE_ATTRS = [	// Combined SVG 1.1 and SVG 2 (draft 14 feb 2018)
+var SVG_CAMEL_CASE_ATTRS = {};	// Combined SVG 1.1 and SVG 2 (draft 14 feb 2018)
+[
 	"attributeName",
 	"attributeType",
 	"baseFrequency",
@@ -80,7 +81,9 @@ var SVG_CAMEL_CASE_ATTRS = [	// Combined SVG 1.1 and SVG 2 (draft 14 feb 2018)
 	"xChannelSelector",
 	"yChannelSelector",
 	"zoomAndPan"
-];
+].forEach(function(attributeName) {
+	SVG_CAMEL_CASE_ATTRS[attributeName.toLowerCase()] = attributeName;
+});
 
 
 // Globals
@@ -318,13 +321,10 @@ Template.prototype.addAttributeRenderers = function(element, owner) {
 				// data-* attributes are lowercase according to specification (also for SVG).
 				// Remap these to there camelCase variant if applied on SVG element.
 				if(element.node().ownerSVGElement !== undefined) {
-					SVG_CAMEL_CASE_ATTRS.some(function(attributeName) {
-						if(attributeName.toLowerCase() === renderAttributeName) {
-							renderAttributeName = attributeName;
-							return true;
-						}
-						return false;
-					});
+					var camelCaseAttributeName = SVG_CAMEL_CASE_ATTRS[renderAttributeName];
+					if(camelCaseAttributeName) {
+						renderAttributeName = camelCaseAttributeName;
+					}
 				}
 			} else {
 				nameMatch = renderAttributeName.match(STYLE_REFERENCE_REG_EX);
