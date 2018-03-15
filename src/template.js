@@ -12,9 +12,79 @@ var defaults = {
 
 // Constants
 var FIELD_SELECTOR_REG_EX = /^\s*\{\{\s*(.*)\s*\}\}\s*$/u;
-var ATTRIBUTE_REFERENCE_REG_EX = /^data-attr-(.*)$/iu;
-var STYLE_REFERENCE_REG_EX = /^data-style-(.*)$/iu;
+var ATTRIBUTE_REFERENCE_REG_EX = /^data-attr-(.*)$/u;
+var STYLE_REFERENCE_REG_EX = /^data-style-(.*)$/u;
 var EVENT_HANDLERS = "__on";
+var SVG_CAMEL_CASE_ATTRS = {};	// Combined SVG 1.1 and SVG 2 (draft 14 feb 2018)
+[
+	"attributeName",
+	"attributeType",
+	"baseFrequency",
+	"baseProfile",
+	"calcMode",
+	"clipPathUnits",
+	"contentScriptType",
+	"contentStyleType",
+	"diffuseConstant",
+	"edgeMode",
+	"externalResourcesRequired",
+	"filterRes",
+	"filterUnits",
+	"glyphRef",
+	"gradientTransform",
+	"gradientUnits",
+	"hatchContentUnits",
+	"hatchUnits",
+	"kernelMatrix",
+	"kernelUnitLength",
+	"keyPoints",
+	"keySplines",
+	"keyTimes",
+	"lengthAdjust",
+	"limitingConeAngle",
+	"markerHeight",
+	"markerUnits",
+	"markerWidth",
+	"maskContentUnits",
+	"maskUnits",
+	"numOctaves",
+	"pathLength",
+	"patternContentUnits",
+	"patternTransform",
+	"patternUnits",
+	"pointsAtX",
+	"pointsAtY",
+	"pointsAtZ",
+	"preserveAlpha",
+	"preserveAspectRatio",
+	"primitiveUnits",
+	"refX",
+	"refY",
+	"repeatCount",
+	"repeatDur",
+	"requiredExtensions",
+	"requiredFeatures",
+	"specularConstant",
+	"specularExponent",
+	"spreadMethod",
+	"startOffset",
+	"stdDeviation",
+	"stitchTiles",
+	"surfaceScale",
+	"systemLanguage",
+	"tableValues",
+	"targetX",
+	"targetY",
+	"textLength",
+	"viewBox",
+	"viewTarget",
+	"xChannelSelector",
+	"yChannelSelector",
+	"zoomAndPan"
+].forEach(function(attributeName) {
+	SVG_CAMEL_CASE_ATTRS[attributeName.toLowerCase()] = attributeName;
+});
+
 
 // Globals
 var namedTemplates = {};
@@ -246,6 +316,16 @@ Template.prototype.addAttributeRenderers = function(element, owner) {
 			var nameMatch = renderAttributeName.match(ATTRIBUTE_REFERENCE_REG_EX);
 			if(nameMatch) {
 				renderAttributeName = nameMatch[1];	// Render the referenced attribute
+
+				// Fix camel case for some SVG attribute names
+				// data-* attributes are lowercase according to specification (also for SVG).
+				// Remap these to there camelCase variant if applied on SVG element.
+				if(element.node().ownerSVGElement !== undefined) {
+					var camelCaseAttributeName = SVG_CAMEL_CASE_ATTRS[renderAttributeName];
+					if(camelCaseAttributeName) {
+						renderAttributeName = camelCaseAttributeName;
+					}
+				}
 			} else {
 				nameMatch = renderAttributeName.match(STYLE_REFERENCE_REG_EX);
 				if(nameMatch) {
