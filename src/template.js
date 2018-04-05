@@ -1,5 +1,5 @@
 import {select} from "d3-selection";
-import {GroupRenderer, RepeatRenderer, IfRenderer, WithRenderer, AttributeRenderer, StyleRenderer, TextRenderer} from "./renderer";
+import {GroupRenderer, RepeatRenderer, IfRenderer, WithRenderer, AttributeRenderer, StyleRenderer, PropertyRenderer, TextRenderer} from "./renderer";
 import {SCOPE_BOUNDARY} from "./constants";
 
 // Defaults
@@ -14,6 +14,7 @@ var defaults = {
 var FIELD_SELECTOR_REG_EX = /^\s*\{\{\s*(.*)\s*\}\}\s*$/u;
 var ATTRIBUTE_REFERENCE_REG_EX = /^data-attr-(.*)$/u;
 var STYLE_REFERENCE_REG_EX = /^data-style-(.*)$/u;
+var PROPERTY_REFERENCE_REG_EX = /^data-prop-(.*)$/u;
 var EVENT_HANDLERS = "__on";
 var SVG_CAMEL_CASE_ATTRS = {};	// Combined SVG 1.1 and SVG 2 (draft 14 feb 2018)
 [
@@ -311,7 +312,7 @@ Template.prototype.addAttributeRenderers = function(element, owner) {
 		if(match) {
 
 			// Decide which attribute/style will be rendered
-			var isStyle = false;
+			var renderClass = AttributeRenderer;
 			var renderAttributeName = attribute.localName;
 			var nameMatch = renderAttributeName.match(ATTRIBUTE_REFERENCE_REG_EX);
 			if(nameMatch) {
@@ -330,7 +331,13 @@ Template.prototype.addAttributeRenderers = function(element, owner) {
 				nameMatch = renderAttributeName.match(STYLE_REFERENCE_REG_EX);
 				if(nameMatch) {
 					renderAttributeName = nameMatch[1];	// Render the referenced style
-					isStyle = true;
+					renderClass = StyleRenderer;
+				} else {
+					nameMatch = renderAttributeName.match(PROPERTY_REFERENCE_REG_EX);
+					if(nameMatch) {
+						renderAttributeName = nameMatch[1];	// Render the referenced property
+						renderClass = PropertyRenderer;
+					}
 				}
 			}
 
@@ -340,7 +347,6 @@ Template.prototype.addAttributeRenderers = function(element, owner) {
 			}
 
 			// Add renderer
-			var renderClass = isStyle ? StyleRenderer : AttributeRenderer;
 			owner.addRenderer(new renderClass(
 				match[1],
 				self.generateUniqueSelector(element),

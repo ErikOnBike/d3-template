@@ -77,6 +77,11 @@ Renderer.prototype.isStyleRenderer = function() {
 	return false;
 };
 
+// Answer whether receiver is PropertyRenderer
+Renderer.prototype.isPropertyRenderer = function() {
+	return false;
+};
+
 // Answer whether receiver is GroupRenderer
 Renderer.prototype.isGroupRenderer = function() {
 	return false;
@@ -203,6 +208,51 @@ StyleRenderer.prototype.render = function(templateElement, transition) {
 
 // Answer whether receiver is StyleRenderer
 StyleRenderer.prototype.isStyleRenderer = function() {
+	return true;
+};
+
+// PropertyRenderer - Renders data as property of element
+export function PropertyRenderer(fieldSelector, elementSelector, property) {
+	Renderer.call(this, fieldSelector, elementSelector);
+	this.property = property;
+}
+
+PropertyRenderer.prototype = Object.create(Renderer.prototype);
+PropertyRenderer.prototype.constructor = PropertyRenderer;
+PropertyRenderer.prototype.render = function(templateElement, transition) {
+
+	// Do not attach transition to element (like with AttributeRenderer and StyleRenderer)
+	// since properties are not supported within a transition. A tween function can however
+	// be used with a property.
+
+	// Render property
+	var element = this.getElement(templateElement);
+	var dataFunction = this.getDataFunction();
+	if(dataFunction.isTweenFunction) {
+		if(transition) {
+
+			// Attach tween to transition and perform update
+			var property = this.property;
+			transition.tween(property, function(d, i, nodes) {
+				var self = this;
+				return function(t) {
+					element.property(property, dataFunction.call(self, d, i, nodes)(t));
+				};
+			});
+		} else {
+
+			// If no transition is present, use the final state (t = 1.0)
+			element.property(this.property, function(d, i, nodes) {
+				return dataFunction.call(this, d, i, nodes)(1.0);
+			});
+		}
+	} else {
+		element.property(this.property, dataFunction);
+	}
+};
+
+// Answer whether receiver is PropertyRenderer
+PropertyRenderer.prototype.isPropertyRenderer = function() {
 	return true;
 };
 
