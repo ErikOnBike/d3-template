@@ -348,7 +348,13 @@ Template.prototype.addAttributeRenderers = function(element, owner) {
 			));
 
 			// Remove attribute
-			element.attr(attribute.name, null);
+			if(nameMatch && attribute.prefix) {
+				// Special case: when attribute is indirect the namespace is not
+				// recognised as such and needs to be removed as a normal attribute.
+				element.node().removeAttribute(attribute.name);
+			} else {
+				element.attr(attribute.name, null);
+			}
 		}
 	});
 };
