@@ -13,9 +13,79 @@ var defaults = {
 
 // Constants
 var FIELD_SELECTOR_REG_EX = /^\s*\{\{\s*(.*)\s*\}\}\s*$/u;
-var ATTRIBUTE_REFERENCE_REG_EX = /^data-attr-(.*)$/iu;
-var STYLE_REFERENCE_REG_EX = /^data-style-(.*)$/iu;
+var ATTRIBUTE_REFERENCE_REG_EX = /^data-attr-(.*)$/u;
+var STYLE_REFERENCE_REG_EX = /^data-style-(.*)$/u;
 var EVENT_HANDLERS = "__on";
+var SVG_CAMEL_CASE_ATTRS = {};	// Combined SVG 1.1 and SVG 2 (draft 14 feb 2018)
+[
+	"attributeName",
+	"attributeType",
+	"baseFrequency",
+	"baseProfile",
+	"calcMode",
+	"clipPathUnits",
+	"contentScriptType",
+	"contentStyleType",
+	"diffuseConstant",
+	"edgeMode",
+	"externalResourcesRequired",
+	"filterRes",
+	"filterUnits",
+	"glyphRef",
+	"gradientTransform",
+	"gradientUnits",
+	"hatchContentUnits",
+	"hatchUnits",
+	"kernelMatrix",
+	"kernelUnitLength",
+	"keyPoints",
+	"keySplines",
+	"keyTimes",
+	"lengthAdjust",
+	"limitingConeAngle",
+	"markerHeight",
+	"markerUnits",
+	"markerWidth",
+	"maskContentUnits",
+	"maskUnits",
+	"numOctaves",
+	"pathLength",
+	"patternContentUnits",
+	"patternTransform",
+	"patternUnits",
+	"pointsAtX",
+	"pointsAtY",
+	"pointsAtZ",
+	"preserveAlpha",
+	"preserveAspectRatio",
+	"primitiveUnits",
+	"refX",
+	"refY",
+	"repeatCount",
+	"repeatDur",
+	"requiredExtensions",
+	"requiredFeatures",
+	"specularConstant",
+	"specularExponent",
+	"spreadMethod",
+	"startOffset",
+	"stdDeviation",
+	"stitchTiles",
+	"surfaceScale",
+	"systemLanguage",
+	"tableValues",
+	"targetX",
+	"targetY",
+	"textLength",
+	"viewBox",
+	"viewTarget",
+	"xChannelSelector",
+	"yChannelSelector",
+	"zoomAndPan"
+].forEach(function(attributeName) {
+	SVG_CAMEL_CASE_ATTRS[attributeName.toLowerCase()] = attributeName;
+});
+
 
 // Globals
 var templates = {};
@@ -23,19 +93,19 @@ var namedTemplates = {};
 
 // Main functions
 
-// Create template from the specified selection
-export function template(selection, options) {
-	return selection.template(options);
-}
-
 // Create template from receiver (this method will be added to the d3 selection prototype)
 export function selection_template(options) {
+	return template(this, options);
+}
+
+// Create template from the specified selection
+export function template(selection, options) {
 
 	// Decide to use options or defaults
 	options = Object.assign({}, defaults, options || {});
 
 	// Create templates from the current selection
-	this.each(function() {
+	selection.each(function() {
 		var element = select(this);
 
 		// Create template using specified identification mechanism
@@ -58,23 +128,23 @@ export function selection_template(options) {
 		}
 	});
 
-	return this;
-}
-
-// Render data on specified selection (selection should consist of a template)
-export function render(selection, data, options) {
-	return selection.render(data, options);
+	return selection;
 }
 
 // Render data on receiver (ie, a selection since this method will be added to the d3 selection prototype)
 export function selection_render(data, options) {
+	return render(this, data, options);
+}
+
+// Render data on specified selection (selection should consist of a template)
+export function render(selectionOrTransition, data, options) {
 
 	// Decide to use options or defaults
 	options = Object.assign({}, defaults, options || {});
 
 	// Render templates in the current selection
-	var transition = this.duration !== undefined ? this : null;
-	this.each(function() {
+	var transition = selectionOrTransition.duration !== undefined ? selectionOrTransition : null;
+	selectionOrTransition.each(function() {
 		var element = select(this);
 
 		// Retrieve template for element
@@ -88,7 +158,7 @@ export function selection_render(data, options) {
 		template.render(data, element, transition);
 	});
 
-	return this;
+	return selectionOrTransition;
 }
 
 // Template class
@@ -271,6 +341,16 @@ Template.prototype.addAttributeRenderers = function(element, owner) {
 			var nameMatch = renderAttributeName.match(ATTRIBUTE_REFERENCE_REG_EX);
 			if(nameMatch) {
 				renderAttributeName = nameMatch[1];	// Render the referenced attribute
+
+				// Fix camel case for some SVG attribute names
+				// data-* attributes are lowercase according to specification (also for SVG).
+				// Remap these to there camelCase variant if applied on SVG element.
+				if(element.node().ownerSVGElement !== undefined) {
+					var camelCaseAttributeName = SVG_CAMEL_CASE_ATTRS[renderAttributeName];
+					if(camelCaseAttributeName) {
+						renderAttributeName = camelCaseAttributeName;
+					}
+				}
 			} else {
 				nameMatch = renderAttributeName.match(STYLE_REFERENCE_REG_EX);
 				if(nameMatch) {
@@ -293,7 +373,13 @@ Template.prototype.addAttributeRenderers = function(element, owner) {
 			));
 
 			// Remove attribute
-			element.attr(attribute.name, null);
+			if(nameMatch && attribute.prefix) {
+				// Special case: when attribute is indirect the namespace is not
+				// recognised as such and needs to be removed as a normal attribute.
+				element.node().removeAttribute(attribute.name);
+			} else {
+				element.attr(attribute.name, null);
+			}
 		}
 	});
 };

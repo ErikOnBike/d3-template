@@ -8,17 +8,26 @@ var fieldParser = new FieldParser();
 
 // Main function
 export function renderFilter(name, filterFunc) {
-	if(arguments.length === 2) {
-		if(filterFunc === null) {
-			delete namedRenderFilters[name];
-		} else {
-			if(typeof filterFunc !== "function") {
-				throw new Error("No function specified when registering renderFilter: " + name);
-			}
-			namedRenderFilters[name] = filterFunc;
-		}
-	} else {
+	return renderFilterPrivate(name, filterFunc, false);
+}
+
+export function renderTweenFilter(name, tweenFilterFunc) {
+	return renderFilterPrivate(name, tweenFilterFunc, true);
+}
+
+function renderFilterPrivate(name, filterFunc, isTweenFilter) {
+	if(filterFunc === null) {
+		delete namedRenderFilters[name];
+	} else if(filterFunc === undefined) {
 		return namedRenderFilters[name];
+	} else {
+		if(typeof filterFunc !== "function") {
+			throw new Error("No function specified when registering renderFilter: " + name);
+		}
+		if(isTweenFilter) {
+			filterFunc.isTweenFunction = true;
+		}
+		namedRenderFilters[name] = filterFunc;
 	}
 }
 
@@ -34,7 +43,7 @@ function Renderer(fieldSelectorAndFilters, elementSelector) {
 	}
 
 	// Set instance variables
-	this.data = createDataFunction(parseResult.value);
+	this.dataFunction = createDataFunction(parseResult.value);
 	this.elementSelector = elementSelector;
 }
 
@@ -43,8 +52,8 @@ Renderer.prototype.render = function(/* templateElement */) {
 };
 
 // Answer the data function
-Renderer.prototype.getData = function() {
-	return this.data;
+Renderer.prototype.getDataFunction = function() {
+	return this.dataFunction;
 };
 
 // Answer the element which should be rendered (indicated by the receivers elementSelector)
@@ -73,11 +82,6 @@ Renderer.prototype.isGroupRenderer = function() {
 	return false;
 };
 
-// Answer whether receiver is RepeatRenderer
-Renderer.prototype.isRepeatRenderer = function() {
-	return false;
-};
-
 // TextRenderer - Renders data as text of element
 export function TextRenderer(fieldSelector, elementSelector) {
 	Renderer.call(this, fieldSelector, elementSelector);
@@ -91,7 +95,29 @@ TextRenderer.prototype.render = function(templateElement, transition) {
 	if(transition) {
 		templateElement = templateElement.transition(transition);
 	}
-	this.getElement(templateElement).text(this.getData());
+
+	// Render text
+	var element = this.getElement(templateElement);
+	var dataFunction = this.getDataFunction();
+	if(dataFunction.isTweenFunction) {
+		if(transition) {
+			element.tween("text", function(d, i, nodes) {
+				var tweenElement = select(this);
+				var self = this;
+				return function(t) {
+					tweenElement.text(dataFunction.call(self, d, i, nodes)(t));
+				};
+			});
+		} else {
+
+			// If no transition is present, use the final state (t = 1.0)
+			element.text(function(d, i, nodes) {
+				return dataFunction.call(this, d, i, nodes)(1.0);
+			});
+		}
+	} else {
+		element.text(dataFunction);
+	}
 };
 
 // AttributeRenderer - Renders data as attribute of element
@@ -108,7 +134,28 @@ AttributeRenderer.prototype.render = function(templateElement, transition) {
 	if(transition) {
 		templateElement = templateElement.transition(transition);
 	}
-	this.getElement(templateElement).attr(this.attribute, this.getData());
+
+	// Render attribute
+	var element = this.getElement(templateElement);
+	var dataFunction = this.getDataFunction();
+	if(dataFunction.isTweenFunction) {
+		if(transition) {
+			element.attrTween(this.attribute, function(d, i, nodes) {
+				var self = this;
+				return function(t) {
+					return dataFunction.call(self, d, i, nodes)(t);
+				};
+			});
+		} else {
+
+			// If no transition is present, use the final state (t = 1.0)
+			element.attr(this.attribute, function(d, i, nodes) {
+				return dataFunction.call(this, d, i, nodes)(1.0);
+			});
+		}
+	} else {
+		element.attr(this.attribute, dataFunction);
+	}
 };
 
 // Answer whether receiver is AttributeRenderer
@@ -130,7 +177,28 @@ StyleRenderer.prototype.render = function(templateElement, transition) {
 	if(transition) {
 		templateElement = templateElement.transition(transition);
 	}
-	this.getElement(templateElement).style(this.style, this.getData());
+
+	// Render style
+	var element = this.getElement(templateElement);
+	var dataFunction = this.getDataFunction();
+	if(dataFunction.isTweenFunction) {
+		if(transition) {
+			element.styleTween(this.style, function(d, i, nodes) {
+				var self = this;
+				return function(t) {
+					return dataFunction.call(self, d, i, nodes)(t);
+				};
+			});
+		} else {
+
+			// If no transition is present, use the final state (t = 1.0)
+			element.style(this.style, function(d, i, nodes) {
+				return dataFunction.call(this, d, i, nodes)(1.0);
+			});
+		}
+	} else {
+		element.style(this.style, dataFunction);
+	}
 };
 
 // Answer whether receiver is StyleRenderer
@@ -158,7 +226,7 @@ GroupRenderer.prototype.render = function(templateElement, transition) {
 	// Join data onto DOM
 	var joinedElements = this.getElement(templateElement)
 		.selectAll(function() { return this.children; })
-			.data(this.getData())
+			.data(this.getDataFunction())
 	;
 
 	// Add new elements
@@ -247,11 +315,6 @@ export function RepeatRenderer(fieldSelector, elementSelector, childElement) {
 RepeatRenderer.prototype = Object.create(GroupRenderer.prototype);
 RepeatRenderer.prototype.constructor = RepeatRenderer;
 
-// Answer whether group renderer is RepeatRenderer
-RepeatRenderer.prototype.isRepeatRenderer = function() {
-	return true;
-};
-
 // IfRenderer - Renders data to a conditional group of elements
 export function IfRenderer(fieldSelector, elementSelector, childElement) {
 	GroupRenderer.call(this, fieldSelector, elementSelector, childElement);
@@ -260,13 +323,13 @@ export function IfRenderer(fieldSelector, elementSelector, childElement) {
 IfRenderer.prototype = Object.create(GroupRenderer.prototype);
 IfRenderer.prototype.constructor = IfRenderer;
 
-IfRenderer.prototype.getData = function() {
+IfRenderer.prototype.getDataFunction = function() {
 
 	// Use d3's data binding of arrays to handle conditionals.
 	// For conditional group create array with either the data as single element or empty array.
 	// This will ensure that a single element is created/updated or an existing element is removed.
 	var self = this;
-	return function(d, i, nodes) { return Renderer.prototype.getData.call(self)(d, i, nodes) ? [ d ] : []; };
+	return function(d, i, nodes) { return Renderer.prototype.getDataFunction.call(self)(d, i, nodes) ? [ d ] : []; };
 };
 
 // WithRenderer - Renders data to a group of elements with new scope
@@ -277,13 +340,13 @@ export function WithRenderer(fieldSelector, elementSelector, childElement) {
 WithRenderer.prototype = Object.create(GroupRenderer.prototype);
 WithRenderer.prototype.constructor = WithRenderer;
 
-WithRenderer.prototype.getData = function() {
+WithRenderer.prototype.getDataFunction = function() {
 
 	// Use d3's data binding of arrays to handle with.
 	// For with group create array with the new scoped data as single element
 	// This will ensure that all children will receive newly scoped data
 	var self = this;
-	return function(d, i, nodes) { return [ Renderer.prototype.getData.call(self)(d, i, nodes) ]; };
+	return function(d, i, nodes) { return [ Renderer.prototype.getDataFunction.call(self)(d, i, nodes) ]; };
 };
 
 // ImportRenderer - Renders data on imported template
@@ -341,8 +404,18 @@ export function createDataFunction(parseFieldResult) {
 		}, d);
 	};
 
+	// Decide if data function is tweenable (depends on last filter applied)
+	var isTweenFunction = false;
+	var lastFilterReference = filterReferences.length > 0 ? filterReferences[filterReferences.length - 1] : null;
+	if(lastFilterReference) {
+		var filter = namedRenderFilters[lastFilterReference.name];
+		if(filter && filter.isTweenFunction) {
+			isTweenFunction = true;
+		}
+	}
+
 	// Create data function based on filters and initial value
-	return function(d, i, nodes) {
+	var dataFunction = function(d, i, nodes) {
 		var node = this;
 		return filterReferences.reduce(function(d, filterReference) {
 			var filter = namedRenderFilters[filterReference.name];
@@ -359,6 +432,9 @@ export function createDataFunction(parseFieldResult) {
 			return d;
 		}, initialValueFunction(d, i, nodes));
 	};
+	dataFunction.isTweenFunction = isTweenFunction;
+
+	return dataFunction;
 }
 
 // Copy specified data onto all children of the element (recursively)
