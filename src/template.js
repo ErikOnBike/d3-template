@@ -124,7 +124,7 @@ export function template(selection, options) {
 	return selection;
 }
 
-// Render data on receiver (ie, a selection since this method will be added to the d3 selection prototype)
+// Render data on receiver (ie, a selection or transition since this method will be added to the d3 selection and transition prototypes)
 export function selection_render(data, options) {
 	return render(this, data, options);
 }

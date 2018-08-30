@@ -200,7 +200,7 @@ The following known *limitations* are present:
 
 ## <a name="API-Reference">API Reference</a>
 
-<a name="template" href="#template">#</a> d3.<b>template</b>(<i>selection[, options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L30)
+<a name="template" href="#template">#</a> d3.<b>template</b>(<i>selection[, options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L101)
 
 Creates a template from the specified *selection*. The selection might be changed as a result of this. Attributes or text consisting of template references will be removed. Child elements of an element containing a valid grouping attribute (`data-repeat`, `data-if` or `data-with`) will be removed. Different elements will have an attribute (`data-template`) applied for identification purposes.
 
@@ -215,7 +215,7 @@ If *options* is specified it should be an object containing properties describin
 }
 ```
 
-<a name="render" href="#render">#</a> d3.<b>render</b>(<i>selection, data[, options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L62)
+<a name="render" href="#render">#</a> d3.<b>render</b>(<i>selection, data[, options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L133)
 
 Renders *data* onto the specified *selection*. If the `elementSelectorAttribute` is changed during template creation using the *options* parameter, this same value has to be provided for *options* parameter of the *render* function. If no template has been created from *selection* an exception is thrown.
 
@@ -277,7 +277,7 @@ The tween filter function should return a function accepting a single parameter 
 </script>
 ```
 
-<a name="selection_template" href="#selection_template">#</a> <i>selection</i>.<b>template</b>(<i>[options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L25)
+<a name="selection_template" href="#selection_template">#</a> <i>selection</i>.<b>template</b>(<i>[options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L96)
 
 Creates a template from this *selection*. The following are all equivalent:
 
@@ -287,7 +287,7 @@ selection.template(options);
 selection.call(d3.template, options)
 ```
 
-<a name="selection_render" href="#selection_render">#</a> <i>selection</i>.<b>render</b>(<i>data[, options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L57)
+<a name="selection_render" href="#selection_render">#</a> <i>selection</i>.<b>render</b>(<i>data[, options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L128)
 
 Renders *data* onto this *selection*. (See also [d3.render](#render)) The following are all equivalent:
 
@@ -297,7 +297,7 @@ selection.render(data);
 selection.call(d3.render, data);
 ```
 
-<a name="transition_render" href="#transition_render">#</a> <i>transition</i>.<b>render</b>(<i>data[, options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L62)
+<a name="transition_render" href="#transition_render">#</a> <i>transition</i>.<b>render</b>(<i>data[, options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L128)
 
 To render data onto a selection using a transition use the following approach:
 
