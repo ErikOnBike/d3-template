@@ -67,21 +67,6 @@ Renderer.prototype.getElement = function(templateElement) {
 	return selection;
 };
 
-// Answer whether receiver is AttributeRenderer
-Renderer.prototype.isAttributeRenderer = function() {
-	return false;
-};
-
-// Answer whether receiver is StyleRenderer
-Renderer.prototype.isStyleRenderer = function() {
-	return false;
-};
-
-// Answer whether receiver is PropertyRenderer
-Renderer.prototype.isPropertyRenderer = function() {
-	return false;
-};
-
 // Answer whether receiver is GroupRenderer
 Renderer.prototype.isGroupRenderer = function() {
 	return false;
@@ -163,11 +148,6 @@ AttributeRenderer.prototype.render = function(templateElement, transition) {
 	}
 };
 
-// Answer whether receiver is AttributeRenderer
-AttributeRenderer.prototype.isAttributeRenderer = function() {
-	return true;
-};
-
 // StyleRenderer - Renders data as style of element
 export function StyleRenderer(fieldSelector, elementSelector, style) {
 	Renderer.call(this, fieldSelector, elementSelector);
@@ -204,11 +184,6 @@ StyleRenderer.prototype.render = function(templateElement, transition) {
 	} else {
 		element.style(this.style, dataFunction);
 	}
-};
-
-// Answer whether receiver is StyleRenderer
-StyleRenderer.prototype.isStyleRenderer = function() {
-	return true;
 };
 
 // PropertyRenderer - Renders data as property of element
@@ -249,11 +224,6 @@ PropertyRenderer.prototype.render = function(templateElement, transition) {
 	} else {
 		element.property(this.property, dataFunction);
 	}
-};
-
-// Answer whether receiver is PropertyRenderer
-PropertyRenderer.prototype.isPropertyRenderer = function() {
-	return true;
 };
 
 // GroupRenderer - Renders data to a repeating group of elements
@@ -324,9 +294,10 @@ GroupRenderer.prototype.addEventHandlers = function(selector, eventHandlers) {
 // Add renderers for child elements to the receiver
 GroupRenderer.prototype.addRenderer = function(renderer) {
 
-	// Append group renderers in order received, but insert attribute or style renderers (on the same element)
+	// Append group renderers in order received, but insert non-group renderers like attribute, style or
+	// property renderers (on the same element)
 	// This allows filters on repeat elements to use the attribute or style values which are also be rendered
-	if(renderer.isAttributeRenderer() || renderer.isStyleRenderer()) {
+	if(!renderer.isGroupRenderer()) {
 
 		// Find first group renderer which will render on the same element
 		var firstGroupRendererIndex = -1;
