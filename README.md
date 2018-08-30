@@ -2,7 +2,7 @@
 
 *(This version is meant for V4/V5 and has not been tested on V3 or earlier versions of D3)*
 
-d3-template is a D3 plugin to support templates using D3's data binding mechanism.  This means you can use D3's familiar functionality directly on or with your templates. Apply transitions or add event handlers to template elements with access to the bound data. Render new data on a template thereby updating attributes, styles and text. Also new elements are added and superfluous elements are removed from repeating groups (D3's enter/exit). This works for both HTML as well as SVG elements. Templates will normally be acting on the live DOM, but can be used on virtual DOM's (like [jsdom](https://github.com/jsdom/jsdom)) as well.
+d3-template is a D3 plugin to support templates using D3's data binding mechanism.  This means you can use D3's familiar functionality directly on or with your templates. Apply transitions or add event handlers to template elements with access to the bound data. Render new data on a template thereby updating attributes, styles, properties and text. Also new elements are added and superfluous elements are removed from repeating groups (D3's enter/exit). This works for both HTML as well as SVG elements. Templates will normally be acting on the live DOM, but can be used on virtual DOM's (like [jsdom](https://github.com/jsdom/jsdom)) as well.
 
 If you are looking for existing templating support like Handlebars, Mustache or Nunjucks have a look at [d3-templating](https://github.com/jkutianski/d3-templating).
 
@@ -104,7 +104,7 @@ To install via [NPM](https://www.npmjs.com) use `npm install d3-template-plugin`
 
 The following *features* are present:
 * Data rendering onto attributes and text directly.
-* Data can also be rendered on attributes or styles indirectly (through `data-attr-<name>` and `data-style-<name>`). Especially useful for SVG because most browsers do not like 'invalid' attributes.
+* Data can also be rendered on attributes, styles or properties indirectly (through `data-attr-<name>`, `data-style-<name>` and `data-prop-<name>`). Especially useful for SVG because most browsers do not like 'invalid' attributes and for setting the `value` or `checked` property of HTML input elements.
 
     ```HTML
     <!-- Most browsers do not like this (invalid according to SVG spec) -->
@@ -116,7 +116,7 @@ The following *features* are present:
 
 * Repeating and conditional groups (through `data-repeat` and `data-if` attribute).
 * A scope group similar to the Javascript `with` statement (through `data-with` attribute) for convenience (but beware, there is no 'parent' operator).
-* Possibility to overwrite the template attribute names with custom names. If for example `repeat`, `if` and `with` is preferred over de long names, this can be specified when creating a template. Beware that such custom attributes are not compliant with HTML5 or SVG specifications and therefore browser behaviour may be unpredictable.
+* Possibility to overwrite the template attribute names with custom names. If for example `repeat`, `if` and `with` is preferred over de long names, this can be specified when creating a template. Although such custom attributes are not compliant with HTML5 or SVG specifications, most browsers will accept it without complaining.
 * Standard filters (like `upper`, `lower`, `substr`, `prefix`, `subarr`, `sort`, `numberFormat`, `timeFormat`, ...) For the full list see [render filters](#Render-filters).
 * Custom filters can be added by calling:
 
@@ -138,7 +138,7 @@ The following *features* are present:
             })
     ;
     ```
-* Tweens (for style, attribute or text) can also be used in combination with a transition by providing a [tween filter](#renderTweenFilter).
+* Tweens (for attribute, style, property or text) can also be used in combination with a transition by providing a [tween filter](#renderTweenFilter).
 
 ## <a name="Limitations">Limitations</a>
 
@@ -196,6 +196,7 @@ The following known *limitations* are present:
     ```
 
 * No support for the 'import' of a template within another template yet.
+* Setting properties of (for example) HTML input elements can not be done using transitions, since D3 transitions do not support it. It is however possible to create a [tween filter](#renderTweenFilter).
 
 ## <a name="API-Reference">API Reference</a>
 
