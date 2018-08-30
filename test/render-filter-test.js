@@ -29,6 +29,8 @@ tape("renderFilter() generics", function(test) {
 	test.equal(d3.renderFilter("format")({ "first": "Hello", "second": "World" }, "This is {first|upper} and {second|lower}"), "This is HELLO and world", "Format with two field selectors and two single filters");
 	test.equal(d3.renderFilter("format")({ "first": "Hello", "second": "World" }, "This is {first|upper|prefix: \"a warm \"} and {second|lower|postfix: \".\"}"), "This is a warm HELLO and world.", "Format with two field selectors and two multi-filters");
 	test.equal(d3.renderFilter("format")("hello", "Word of the day: {.|format: \"(and today only) {.|upper}\"}."), "Word of the day: (and today only) HELLO.", "Nested format");
+	test.throws(function() { d3.renderFilter("format")("hello", "Here be dragons: {.|format: {"); }, /Invalid format string in filter/, "Invalid format");
+	test.throws(function() { d3.renderFilter("format")("hello", "{a"); }, /Invalid format string in filter/, "Invalid format");
 	test.end();
 });
 

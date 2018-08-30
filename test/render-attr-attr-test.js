@@ -33,3 +33,12 @@ tape("render() attribute through data-attribute replacing class", function(test)
 	test.equal(selection.attr("class"), "replaced", "Original class is replaced");
 	test.end();
 });
+
+tape("render() camelcase SVG attributes", function(test) {
+	var document = jsdom("<svg data-attr-viewbox='{{.}}'></div>");
+	var node = document.querySelector("svg");
+	var selection = d3.select(node);
+	selection.template().render("0,0,100,100");
+	test.equal(selection.attr("viewBox"), "0,0,100,100", "Camel case attribute value is rendered on root element");
+	test.end();
+});

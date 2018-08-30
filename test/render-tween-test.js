@@ -22,13 +22,18 @@ tape("render() tween function without transition", function(test) {
 });
 
 tape("render() tween function with transition", function(test) {
-	var document = jsdom("<div data-style-color='{{color|colorTween}}' data-attr-title='{{text|textTween}}' data-t='{{.|valueT}}'><span>{{text|textTween}}</span></div>");
+	var document = jsdom("<div data-style-color='{{color|colorTween}}' data-attr-title='{{text|textTween}}' data-prop-value='{{prop|propTween}}' data-t='{{.|valueT}}'><span>{{text|textTween}}</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	d3.renderTweenFilter("colorTween", function(d) {
 		return d3.interpolateRgb("white", d);
 	});
 	d3.renderTweenFilter("textTween", function(d) {
+		return function(t) {
+			return d.substr(0, Math.floor(t * d.length));
+		};
+	});
+	d3.renderTweenFilter("propTween", function(d) {
 		return function(t) {
 			return d.substr(0, Math.floor(t * d.length));
 		};
@@ -44,7 +49,7 @@ tape("render() tween function with transition", function(test) {
 			.duration(1000)
 			.on("start", function() {
 				var transition = d3.active(this);
-				transition.render({ color: "blue", text: "Hello world" });
+				transition.render({ color: "blue", text: "Hello world", prop: "My value" });
 			})
 	;
 
@@ -58,8 +63,24 @@ tape("render() tween function with transition", function(test) {
 		}
 		var t = +selection.attr("data-t");
 		var text = "Hello world";
+		var prop = "My value";
 		test.equal(selection.style("color"), d3.interpolateRgb("white", "blue")(t), "Style 'color' is rendered on element");
 		test.equal(selection.attr("title"), text.substr(0, Math.floor(t * text.length)), "Attribute is rendered on element");
 		test.equal(selection.text(), text.substr(0, Math.floor(t * text.length)), "Text is rendered on element");
+		test.equal(selection.property("value"), prop.substr(0, Math.floor(t * prop.length)), "Property is rendered on element");
 	}, 100);
+});
+
+tape("render() property through data-property with literal value using tween function but without transition", function(test) {
+	d3.renderTweenFilter("tweenProp", function(d) {
+		return function(t) {
+			return d.substr(0, Math.floor(t * d.length));
+		};
+	});
+	var document = jsdom("<input type='text' data-prop-value='{{.|tweenProp}}'></input>");
+	var node = document.querySelector("input");
+	var selection = d3.select(node);
+	selection.template().render("Hello world");
+	test.equal(selection.property("value"), "Hello world", "Property 'value' is rendered on element");
+	test.end();
 });

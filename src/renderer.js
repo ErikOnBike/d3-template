@@ -67,16 +67,6 @@ Renderer.prototype.getElement = function(templateElement) {
 	return selection;
 };
 
-// Answer whether receiver is AttributeRenderer
-Renderer.prototype.isAttributeRenderer = function() {
-	return false;
-};
-
-// Answer whether receiver is StyleRenderer
-Renderer.prototype.isStyleRenderer = function() {
-	return false;
-};
-
 // Answer whether receiver is GroupRenderer
 Renderer.prototype.isGroupRenderer = function() {
 	return false;
@@ -158,11 +148,6 @@ AttributeRenderer.prototype.render = function(templateElement, transition) {
 	}
 };
 
-// Answer whether receiver is AttributeRenderer
-AttributeRenderer.prototype.isAttributeRenderer = function() {
-	return true;
-};
-
 // StyleRenderer - Renders data as style of element
 export function StyleRenderer(fieldSelector, elementSelector, style) {
 	Renderer.call(this, fieldSelector, elementSelector);
@@ -201,9 +186,44 @@ StyleRenderer.prototype.render = function(templateElement, transition) {
 	}
 };
 
-// Answer whether receiver is StyleRenderer
-StyleRenderer.prototype.isStyleRenderer = function() {
-	return true;
+// PropertyRenderer - Renders data as property of element
+export function PropertyRenderer(fieldSelector, elementSelector, property) {
+	Renderer.call(this, fieldSelector, elementSelector);
+	this.property = property;
+}
+
+PropertyRenderer.prototype = Object.create(Renderer.prototype);
+PropertyRenderer.prototype.constructor = PropertyRenderer;
+PropertyRenderer.prototype.render = function(templateElement, transition) {
+
+	// Do not attach transition to element (like with AttributeRenderer and StyleRenderer)
+	// since properties are not supported within a transition. A tween function can however
+	// be used with a property.
+
+	// Render property
+	var element = this.getElement(templateElement);
+	var dataFunction = this.getDataFunction();
+	if(dataFunction.isTweenFunction) {
+		if(transition) {
+
+			// Attach tween to transition and perform update
+			var property = this.property;
+			transition.tween(property, function(d, i, nodes) {
+				var self = this;
+				return function(t) {
+					element.property(property, dataFunction.call(self, d, i, nodes)(t));
+				};
+			});
+		} else {
+
+			// If no transition is present, use the final state (t = 1.0)
+			element.property(this.property, function(d, i, nodes) {
+				return dataFunction.call(this, d, i, nodes)(1.0);
+			});
+		}
+	} else {
+		element.property(this.property, dataFunction);
+	}
 };
 
 // GroupRenderer - Renders data to a repeating group of elements
@@ -274,9 +294,10 @@ GroupRenderer.prototype.addEventHandlers = function(selector, eventHandlers) {
 // Add renderers for child elements to the receiver
 GroupRenderer.prototype.addRenderer = function(renderer) {
 
-	// Append group renderers in order received, but insert attribute or style renderers (on the same element)
+	// Append group renderers in order received, but insert non-group renderers like attribute, style or
+	// property renderers (on the same element)
 	// This allows filters on repeat elements to use the attribute or style values which are also be rendered
-	if(renderer.isAttributeRenderer() || renderer.isStyleRenderer()) {
+	if(!renderer.isGroupRenderer()) {
 
 		// Find first group renderer which will render on the same element
 		var firstGroupRendererIndex = -1;
