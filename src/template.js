@@ -258,7 +258,6 @@ Template.prototype.addGroupRenderers = function(element, owner) {
 
 		// Additional children are not allowed
 		if(element.node().children.length > 0) {
-		//if(element.selectAll("*").size() > 0) {
 			throw new Error("Only a single child element allowed within repeat, if or with group. Wrap child elements in a container element.");
 		}
 
