@@ -7,7 +7,8 @@ var defaults = {
 	elementSelectorAttribute: "data-template",
 	repeatAttribute: "data-repeat",
 	ifAttribute: "data-if",
-	withAttribute: "data-with"
+	withAttribute: "data-with",
+	importAttribute: "data-import"
 };
 
 // Constants
@@ -88,7 +89,7 @@ var SVG_CAMEL_CASE_ATTRS = {};	// Combined SVG 1.1 and SVG 2 (draft 14 feb 2018)
 
 
 // Globals
-var namedTemplates = {};
+var templates = {};
 
 // Main functions
 
@@ -117,8 +118,8 @@ export function template(selection, options) {
 		template.addRenderers(element, template);
 
 		// Store template 
-		var templateName = element.attr(options.elementSelectorAttribute);
-		namedTemplates[templateName] = template;
+		var templateSelector = element.attr(options.elementSelectorAttribute);
+		templates[templateSelector] = template;
 	});
 
 	return selection;
@@ -141,11 +142,11 @@ export function render(selectionOrTransition, data, options) {
 		var element = select(this);
 
 		// Retrieve template for element
-		var templateName = element.attr(options.elementSelectorAttribute);
-		if(!templateName) {
+		var templateSelector = element.attr(options.elementSelectorAttribute);
+		if(!templateSelector) {
 			throw new Error("Method render() called on non-template selection.");
 		}
-		var template = namedTemplates[templateName];
+		var template = templates[templateSelector];
 
 		// Render data on template
 		template.render(data, element, transition);
@@ -193,6 +194,9 @@ Template.prototype.render = function(data, element, transition) {
 
 // Add renderers for the specified element to specified owner
 Template.prototype.addRenderers = function(element, owner) {
+
+	// First handle importing/cloning a DOM element
+	this.performImport(element);
 
 	// Add renderers for groups, attributes and text (order is important!)
 	this.addGroupRenderers(element, owner);
@@ -246,7 +250,7 @@ Template.prototype.addGroupRenderers = function(element, owner) {
 		}
 
 		// Additional children are not allowed
-		if(element.selectAll("*").size() > 0) {
+		if(element.node().children.length > 0) {
 			throw new Error("Only a single child element allowed within repeat, if or with group. Wrap child elements in a container element.");
 		}
 
@@ -424,4 +428,30 @@ Template.prototype.copyEventHandlers = function(element, groupRenderer) {
 		var childElement = select(this);
 		self.copyEventHandlers(childElement, groupRenderer);
 	});
+};
+
+// Perform an import/clone of another DOM element (incl. its children)
+Template.prototype.performImport = function(element) {
+
+	// Handle import
+	var importSelector = element.attr(this.options.importAttribute);
+	if(importSelector) {
+
+		// Validate there are no childs presents
+		if(element.node().children.length > 0 || element.text().trim().length !== 0) {
+			throw new Error("No child element or text allowed within elements with an \"import\".");
+		}
+
+		// Clone nodes of specified DOM element
+		element
+			.append(function() {
+				var importElement = select(importSelector);
+				if(importElement.size() !== 1) {
+					throw new Error("Specified selector \"" + importSelector + "\" for \"import\" does not exist.");
+				}
+				return importElement.node().cloneNode(true);
+			})
+			.attr("id", null)	// Remove identity (if any) to prevent duplicate id's
+		;
+	}
 };

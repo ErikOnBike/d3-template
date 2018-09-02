@@ -367,7 +367,10 @@ WithRenderer.prototype.getDataFunction = function() {
 	// For with group create array with the new scoped data as single element
 	// This will ensure that all children will receive newly scoped data
 	var self = this;
-	return function(d, i, nodes) { return [ Renderer.prototype.getDataFunction.call(self)(d, i, nodes) ]; };
+	return function(d, i, nodes) {
+		var node = this;
+		return [ Renderer.prototype.getDataFunction.call(self).call(node, d, i, nodes) ];
+	};
 };
 
 // Helper functions
