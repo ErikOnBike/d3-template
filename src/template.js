@@ -1,5 +1,5 @@
 import {select} from "d3-selection";
-import {GroupRenderer, RepeatRenderer, IfRenderer, WithRenderer, ImportRenderer, AttributeRenderer, StyleRenderer, TextRenderer} from "./renderer";
+import {GroupRenderer, RepeatRenderer, IfRenderer, WithRenderer, AttributeRenderer, StyleRenderer, PropertyRenderer, TextRenderer} from "./renderer";
 import {SCOPE_BOUNDARY} from "./constants";
 
 // Defaults
@@ -15,6 +15,7 @@ var defaults = {
 var FIELD_SELECTOR_REG_EX = /^\s*\{\{\s*(.*)\s*\}\}\s*$/u;
 var ATTRIBUTE_REFERENCE_REG_EX = /^data-attr-(.*)$/u;
 var STYLE_REFERENCE_REG_EX = /^data-style-(.*)$/u;
+var PROPERTY_REFERENCE_REG_EX = /^data-prop-(.*)$/u;
 var EVENT_HANDLERS = "__on";
 var SVG_CAMEL_CASE_ATTRS = {};	// Combined SVG 1.1 and SVG 2 (draft 14 feb 2018)
 [
@@ -131,7 +132,7 @@ export function template(selection, options) {
 	return selection;
 }
 
-// Render data on receiver (ie, a selection since this method will be added to the d3 selection prototype)
+// Render data on receiver (ie, a selection or transition since this method will be added to the d3 selection and transition prototypes)
 export function selection_render(data, options) {
 	return render(this, data, options);
 }
@@ -201,8 +202,10 @@ Template.prototype.render = function(data, element, transition) {
 // Add renderers for the specified element to specified owner
 Template.prototype.addRenderers = function(element, owner) {
 
+	// First handle importing/cloning a DOM element
+	this.performImport(element);
+
 	// Add renderers for groups, attributes and text (order is important!)
-	this.addImportRenderers(element, owner);
 	this.addGroupRenderers(element, owner);
 	this.addAttributeRenderers(element, owner);
 	this.addTextRenderers(element, owner);
@@ -213,22 +216,6 @@ Template.prototype.addRenderers = function(element, owner) {
 		var childElement = select(this);
 		self.addRenderers(childElement, owner);
 	});
-};
-
-// Add import renderers for the specified element to specified owner
-Template.prototype.addImportRenderers = function(element, owner) {
-
-	// Handle import
-	var importTemplateId = element.attr(this.options.importAttribute);
-	if(importTemplateId) {
-
-		// Add import renderer
-		owner.addRenderer(new ImportRenderer(
-			this.generateUniqueSelector(element),
-			namedTemplates[importTemplateId],
-			importTemplateId
-		));
-	}
 };
 
 // Add group renderers (like repeat, if, with) for the specified element to specified owner
@@ -270,7 +257,8 @@ Template.prototype.addGroupRenderers = function(element, owner) {
 		}
 
 		// Additional children are not allowed
-		if(element.selectAll("*").size() > 0) {
+		if(element.node().children.length > 0) {
+		//if(element.selectAll("*").size() > 0) {
 			throw new Error("Only a single child element allowed within repeat, if or with group. Wrap child elements in a container element.");
 		}
 
@@ -336,7 +324,7 @@ Template.prototype.addAttributeRenderers = function(element, owner) {
 		if(match) {
 
 			// Decide which attribute/style will be rendered
-			var isStyle = false;
+			var renderClass = AttributeRenderer;
 			var renderAttributeName = attribute.localName;
 			var nameMatch = renderAttributeName.match(ATTRIBUTE_REFERENCE_REG_EX);
 			if(nameMatch) {
@@ -355,7 +343,13 @@ Template.prototype.addAttributeRenderers = function(element, owner) {
 				nameMatch = renderAttributeName.match(STYLE_REFERENCE_REG_EX);
 				if(nameMatch) {
 					renderAttributeName = nameMatch[1];	// Render the referenced style
-					isStyle = true;
+					renderClass = StyleRenderer;
+				} else {
+					nameMatch = renderAttributeName.match(PROPERTY_REFERENCE_REG_EX);
+					if(nameMatch) {
+						renderAttributeName = nameMatch[1];	// Render the referenced property
+						renderClass = PropertyRenderer;
+					}
 				}
 			}
 
@@ -365,7 +359,6 @@ Template.prototype.addAttributeRenderers = function(element, owner) {
 			}
 
 			// Add renderer
-			var renderClass = isStyle ? StyleRenderer : AttributeRenderer;
 			owner.addRenderer(new renderClass(
 				match[1],
 				self.generateUniqueSelector(element),
@@ -443,4 +436,30 @@ Template.prototype.copyEventHandlers = function(element, groupRenderer) {
 		var childElement = select(this);
 		self.copyEventHandlers(childElement, groupRenderer);
 	});
+};
+
+// Perform an import/clone of another DOM element (incl. its children)
+Template.prototype.performImport = function(element) {
+
+	// Handle import
+	var importSelector = element.attr(this.options.importAttribute);
+	if(importSelector) {
+
+		// Validate there are no childs presents
+		if(element.node().children.length > 0 || element.text().trim().length !== 0) {
+			throw new Error("No child element or text allowed within elements with an \"import\".");
+		}
+
+		// Clone nodes of specified DOM element
+		element
+			.append(function() {
+				var importElement = select(importSelector);
+				if(importElement.size() !== 1) {
+					throw new Error("Specified selector \"" + importSelector + "\" for \"import\" does not exist.");
+				}
+				return importElement.node().cloneNode(true);
+			})
+			.attr("id", null)	// Remove identity (if any) to prevent duplicate id's
+		;
+	}
 };

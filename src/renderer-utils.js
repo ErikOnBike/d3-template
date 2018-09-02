@@ -90,7 +90,7 @@ function parseFormatString(formatString) {
 			if(parseResult.value === undefined) {
 				throw new SyntaxError("Invalid format string in filter: " + parseResult.errorCode);
 			} else if(formatString.charAt(parseResult.index) !== "}") {
-				throw new SyntaxError("Invalid format string in filter: EXTRA_CHARACTERS");
+				throw new SyntaxError("Invalid format string in filter: MISSING_CLOSING_BRACE");
 			}
 
 			// Append data function for field selector and filter references
