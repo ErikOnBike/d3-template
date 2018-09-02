@@ -90,7 +90,6 @@ var SVG_CAMEL_CASE_ATTRS = {};	// Combined SVG 1.1 and SVG 2 (draft 14 feb 2018)
 
 // Globals
 var templates = {};
-var namedTemplates = {};
 
 // Main functions
 
@@ -121,12 +120,6 @@ export function template(selection, options) {
 		// Store template 
 		var templateSelector = element.attr(options.elementSelectorAttribute);
 		templates[templateSelector] = template;
-
-		// Store named templates separately
-		var templateId = element.attr("id");
-		if(templateId) {
-			namedTemplates[templateId] = template;
-		}
 	});
 
 	return selection;
