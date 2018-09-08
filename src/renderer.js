@@ -394,7 +394,10 @@ IfRenderer.prototype.getDataFunction = function() {
 	// For conditional group create array with either the data as single element or empty array.
 	// This will ensure that a single element is created/updated or an existing element is removed.
 	var self = this;
-	return function(d, i, nodes) { return TemplateElement.prototype.getDataFunction.call(self)(d, i, nodes) ? [ d ] : []; };
+	return function(d, i, nodes) {
+		var node = this;
+		return TemplateElement.prototype.getDataFunction.call(self).call(node, d, i, nodes) ? [ d ] : [];
+	};
 };
 
 // WithRenderer - Renders data to a group of elements with new scope
