@@ -227,15 +227,40 @@ PropertyRenderer.prototype.render = function(templateElement, transition) {
 };
 
 // GroupRenderer - Renders data to a repeating group of elements
-export function GroupRenderer(fieldSelector, elementSelector, childElement) {
-	Renderer.call(this, fieldSelector, elementSelector);
+export function GroupRenderer(fieldSelectorAndFilters, elementSelector, childElement) {
+
+	// Parse field selector and (optional) filters
+	var parseResult = fieldParser.parse(fieldSelectorAndFilters);
+	if(parseResult.value === undefined) {
+		throw new SyntaxError("Failed to parse field selector and/or filter <" + fieldSelectorAndFilters + "> @ " + parseResult.index + ": " + parseResult.errorCode);
+	} else if(parseResult.index !== fieldSelectorAndFilters.length) {
+		throw new SyntaxError("Failed to parse field selector and/or filter <" + fieldSelectorAndFilters + "> @ " + parseResult.index + ": EXTRA_CHARACTERS");
+	}
+
+	// Set instance variables
+	this.dataFunction = createDataFunction(parseResult.value);
+	this.elementSelector = elementSelector;
 	this.childElement = childElement;
 	this.eventHandlersMap = {};
 	this.renderers = [];
 }
 
-GroupRenderer.prototype = Object.create(Renderer.prototype);
-GroupRenderer.prototype.constructor = GroupRenderer;
+// Answer the element which should be rendered (indicated by the receivers elementSelector)
+GroupRenderer.prototype.getElement = function(templateElement) {
+
+	// Element is either template element itself or child(ren) of the template element (but not both)
+	var selection = templateElement.filter(matcher(this.elementSelector));
+	if(selection.size() === 0) {
+		selection = templateElement.select(this.elementSelector);
+	}
+	return selection;
+};
+
+// Answer the data function
+GroupRenderer.prototype.getDataFunction = function() {
+	return this.dataFunction;
+};
+
 GroupRenderer.prototype.render = function(templateElement, transition) {
 
 	// Sanity check
