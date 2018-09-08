@@ -67,8 +67,8 @@ Renderer.prototype.getElement = function(templateElement) {
 	return selection;
 };
 
-// Answer whether receiver is GroupRenderer
-Renderer.prototype.isGroupRenderer = function() {
+// Answer whether receiver is TemplateElement
+Renderer.prototype.isTemplateElement = function() {
 	return false;
 };
 
@@ -226,8 +226,8 @@ PropertyRenderer.prototype.render = function(templateElement, transition) {
 	}
 };
 
-// GroupRenderer - Renders data to a repeating group of elements
-export function GroupRenderer(fieldSelectorAndFilters, elementSelector, childElement) {
+// TemplateElement - Renders data to a repeating group of elements
+export function TemplateElement(fieldSelectorAndFilters, elementSelector, childElement) {
 
 	// Parse field selector and (optional) filters
 	var parseResult = fieldParser.parse(fieldSelectorAndFilters);
@@ -246,7 +246,7 @@ export function GroupRenderer(fieldSelectorAndFilters, elementSelector, childEle
 }
 
 // Answer the element which should be rendered (indicated by the receivers elementSelector)
-GroupRenderer.prototype.getElement = function(templateElement) {
+TemplateElement.prototype.getElement = function(templateElement) {
 
 	// Element is either template element itself or child(ren) of the template element (but not both)
 	var selection = templateElement.filter(matcher(this.elementSelector));
@@ -257,11 +257,11 @@ GroupRenderer.prototype.getElement = function(templateElement) {
 };
 
 // Answer the data function
-GroupRenderer.prototype.getDataFunction = function() {
+TemplateElement.prototype.getDataFunction = function() {
 	return this.dataFunction;
 };
 
-GroupRenderer.prototype.render = function(templateElement, transition) {
+TemplateElement.prototype.render = function(templateElement, transition) {
 
 	// Sanity check
 	if(this.childElement.size() === 0) {
@@ -311,35 +311,35 @@ GroupRenderer.prototype.render = function(templateElement, transition) {
 };
 
 // Add event handlers for specified (sub)element (through a selector) to the receiver
-GroupRenderer.prototype.addEventHandlers = function(selector, eventHandlers) {
+TemplateElement.prototype.addEventHandlers = function(selector, eventHandlers) {
 	var entry = this.eventHandlersMap[selector];
 	this.eventHandlersMap[selector] = entry ? entry.concat(eventHandlers) : eventHandlers;
 };
 
 // Add renderers for child elements to the receiver
-GroupRenderer.prototype.addRenderer = function(renderer) {
+TemplateElement.prototype.addRenderer = function(renderer) {
 
 	// Append group renderers in order received, but insert non-group renderers like attribute, style or
 	// property renderers (on the same element)
 	// This allows filters on repeat elements to use the attribute or style values which are also be rendered
-	if(!renderer.isGroupRenderer()) {
+	if(!renderer.isTemplateElement()) {
 
 		// Find first group renderer which will render on the same element
-		var firstGroupRendererIndex = -1;
+		var firstTemplateElementIndex = -1;
 		var currentIndex = this.renderers.length - 1;
-		var isGroupRendererOnSameElement = function(currentRenderer) {
+		var isTemplateElementOnSameElement = function(currentRenderer) {
 			return currentRenderer.elementSelector === renderer.elementSelector &&
-				currentRenderer.isGroupRenderer()
+				currentRenderer.isTemplateElement()
 			;
 		};
-		while(currentIndex >= 0 && isGroupRendererOnSameElement(this.renderers[currentIndex])) {
-			firstGroupRendererIndex = currentIndex;
+		while(currentIndex >= 0 && isTemplateElementOnSameElement(this.renderers[currentIndex])) {
+			firstTemplateElementIndex = currentIndex;
 			currentIndex--;
 		}
 
 		// If such group renderer is found, insert (attr/style) renderer before (otherwise append)
-		if(firstGroupRendererIndex >= 0) {
-			this.renderers.splice(firstGroupRendererIndex, 0, renderer);
+		if(firstTemplateElementIndex >= 0) {
+			this.renderers.splice(firstTemplateElementIndex, 0, renderer);
 		} else {
 			this.renderers.push(renderer);
 		}
@@ -348,25 +348,25 @@ GroupRenderer.prototype.addRenderer = function(renderer) {
 	}
 };
 
-// Answer whether receiver is GroupRenderer
-GroupRenderer.prototype.isGroupRenderer = function() {
+// Answer whether receiver is TemplateElement
+TemplateElement.prototype.isTemplateElement = function() {
 	return true;
 };
 
 // RepeatRenderer - Renders data to a repeating group of elements
 export function RepeatRenderer(fieldSelector, elementSelector, childElement) {
-	GroupRenderer.call(this, fieldSelector, elementSelector, childElement);
+	TemplateElement.call(this, fieldSelector, elementSelector, childElement);
 }
 
-RepeatRenderer.prototype = Object.create(GroupRenderer.prototype);
+RepeatRenderer.prototype = Object.create(TemplateElement.prototype);
 RepeatRenderer.prototype.constructor = RepeatRenderer;
 
 // IfRenderer - Renders data to a conditional group of elements
 export function IfRenderer(fieldSelector, elementSelector, childElement) {
-	GroupRenderer.call(this, fieldSelector, elementSelector, childElement);
+	TemplateElement.call(this, fieldSelector, elementSelector, childElement);
 }
 
-IfRenderer.prototype = Object.create(GroupRenderer.prototype);
+IfRenderer.prototype = Object.create(TemplateElement.prototype);
 IfRenderer.prototype.constructor = IfRenderer;
 
 IfRenderer.prototype.getDataFunction = function() {
@@ -380,10 +380,10 @@ IfRenderer.prototype.getDataFunction = function() {
 
 // WithRenderer - Renders data to a group of elements with new scope
 export function WithRenderer(fieldSelector, elementSelector, childElement) {
-	GroupRenderer.call(this, fieldSelector, elementSelector, childElement);
+	TemplateElement.call(this, fieldSelector, elementSelector, childElement);
 }
 
-WithRenderer.prototype = Object.create(GroupRenderer.prototype);
+WithRenderer.prototype = Object.create(TemplateElement.prototype);
 WithRenderer.prototype.constructor = WithRenderer;
 
 WithRenderer.prototype.getDataFunction = function() {

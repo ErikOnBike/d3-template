@@ -1,5 +1,5 @@
 import {select} from "d3-selection";
-import {GroupRenderer, RepeatRenderer, IfRenderer, WithRenderer, AttributeRenderer, StyleRenderer, PropertyRenderer, TextRenderer} from "./renderer";
+import {TemplateElement, RepeatRenderer, IfRenderer, WithRenderer, AttributeRenderer, StyleRenderer, PropertyRenderer, TextRenderer} from "./renderer";
 import {SCOPE_BOUNDARY} from "./constants";
 
 // Defaults
@@ -178,7 +178,7 @@ Template.joinData = function(data, element) {
 
 // Instance methods
 // Add renderers
-Template.prototype.addRenderer = GroupRenderer.prototype.addRenderer;
+Template.prototype.addRenderer = TemplateElement.prototype.addRenderer;
 
 // Render data on specified template element
 Template.prototype.render = function(data, element, transition) {
@@ -199,7 +199,7 @@ Template.prototype.addRenderers = function(element, owner) {
 	this.performImport(element);
 
 	// Add renderers for groups, attributes and text (order is important!)
-	this.addGroupRenderers(element, owner);
+	this.addTemplateElements(element, owner);
 	this.addAttributeRenderers(element, owner);
 	this.addTextRenderers(element, owner);
 
@@ -212,7 +212,7 @@ Template.prototype.addRenderers = function(element, owner) {
 };
 
 // Add group renderers (like repeat, if, with) for the specified element to specified owner
-Template.prototype.addGroupRenderers = function(element, owner) {
+Template.prototype.addTemplateElements = function(element, owner) {
 
 	// Handle groups
 	var groups = [
