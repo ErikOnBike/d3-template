@@ -2,6 +2,7 @@ var tape = require("tape");
 var jsdom = require("./jsdom");
 var d3 = Object.assign({}, require("d3-selection"), require("../"));
 
+/*
 tape("import another DOM element", function(test) {
 	global.document = jsdom("<body><div id='component' class='component'><span>Hello</span></div><div id='template'><div data-import='#component'></div></div></body>");
 	var node = document.querySelector("#template");
@@ -29,3 +30,4 @@ tape("import when child already present", function(test) {
 	test.throws(function() { selection.template() }, /No child element or text allowed within elements with an "import"./, "The element already has child elements");
 	test.end();
 });
+*/

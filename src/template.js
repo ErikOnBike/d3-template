@@ -204,9 +204,6 @@ Template.prototype.render = function(data, element, transition) {
 // Add renderers for the specified element to specified owner
 Template.prototype.addRenderers = function(element, owner) {
 
-	// First handle importing/cloning a DOM element
-	this.performImport(element);
-
 	// Add renderers for groups, attributes and text (order is important!)
 	this.addTemplateElements(element, owner);
 	this.addAttributeRenderers(element, owner);
@@ -496,33 +493,6 @@ Template.prototype.generateUniqueSelector = function(element) {
 	return "[" + elementSelectorAttribute + "=\"" + selectorId + "\"]";
 };
 
-// Perform an import/clone of another DOM element (incl. its children)
-Template.prototype.performImport = function(element) {
-
-	// Handle import
-	var importSelector = element.attr(this.options.importAttribute);
-	if(importSelector) {
-
-		// Validate there are no childs presents
-		if(element.node().children.length > 0 || element.text().trim().length !== 0) {
-			throw new Error("No child element or text allowed within elements with an \"import\".");
-		}
-
-		// Clone nodes of specified DOM element
-		element
-			.append(function() {
-				var importElement = select(importSelector);
-				if(importElement.size() !== 1) {
-					throw new Error("Specified selector \"" + importSelector + "\" for \"import\" does not exist.");
-				}
-				return importElement.node().cloneNode(true);
-			})
-			.attr("id", null)	// Remove identity (if any) to prevent duplicate id's
-		;
-	}
-};
-
 // Add renderers
 Template.prototype.addRenderer = TemplateNode.prototype.addRenderer;
 Template.prototype.addChildElement = TemplateNode.prototype.addChildElement;
-
