@@ -1,8 +1,9 @@
 import {format as numberFormat} from "d3-format";
 import {timeFormat} from "d3-time-format";
 import {shuffle} from "d3-array";
-import {renderFilter, createDataFunction} from "./renderer";
+import {renderFilter} from "./renderer";
 import {FieldParser} from "./field-parser";
+import {Template} from "./template.js";
 
 var defaultFilters = {
 
@@ -95,7 +96,7 @@ function parseFormatString(formatString) {
 
 			// Append data function for field selector and filter references
 			result.push({
-				dataFunction: createDataFunction(parseResult.value)
+				dataFunction: Template.prototype.createDataFunction.call(null, parseResult.value)
 			});
 
 			// Update index for further parsing (+ 1 to skip closing curly brace)

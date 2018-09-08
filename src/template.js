@@ -1,5 +1,8 @@
-import {select,matcher} from "d3-selection";
-import {fieldParser, createDataFunction, AttributeRenderer, StyleRenderer, PropertyRenderer, TextRenderer} from "./renderer";
+import { select } from "d3-selection";
+import { TemplatePath } from "./template-path";
+import { TemplateNode,RepeatNode, IfNode, WithNode } from "./template-node";
+import { FieldParser } from "./field-parser";
+import { namedRenderFilters, AttributeRenderer, StyleRenderer, PropertyRenderer, TextRenderer } from "./renderer";
 
 // Defaults
 var defaults = {
@@ -156,7 +159,7 @@ export function render(selectionOrTransition, data, options) {
 }
 
 // Template class
-function Template(options) {
+export function Template(options) {
 	this.options = options;
 	this.childElements = [];
 	this.renderers = [];
@@ -263,8 +266,7 @@ Template.prototype.addTemplateElements = function(element, owner) {
 		// Add group renderer
 		var group = groups[0];
 		var groupRenderer = new group.renderClass(
-			group.match[1],
-			this.generateUniqueSelector(element),
+			this.createTemplatePath(element, group.match[1]),
 			childElement
 		);
 		owner.addChildElement(groupRenderer);
@@ -284,6 +286,24 @@ Template.prototype.addTemplateElements = function(element, owner) {
 			this.copyEventHandlers(childElement, groupRenderer);
 		}
 	}
+};
+
+// Copy all event handlers of element (and its children) to the groupRenderer
+Template.prototype.copyEventHandlers = function(element, groupRenderer) {
+
+	// Add event handlers from element (root node)
+	var eventHandlers = element.node()[EVENT_HANDLERS];
+	if(eventHandlers && eventHandlers.length > 0) {
+		var selector = this.generateUniqueSelector(element);
+		groupRenderer.addEventHandlers(selector, eventHandlers);
+	}
+
+	// Add event handlers for direct children (recursively)
+	var self = this;
+	element.selectAll(function() { return this.children; }).each(function() {
+		var childElement = select(this);
+		self.copyEventHandlers(childElement, groupRenderer);
+	});
 };
 
 // Add attribute renderers (include attributes referring to style properties) for the specified element to specified owner
@@ -358,8 +378,7 @@ Template.prototype.addAttributeRenderers = function(element, owner) {
 
 			// Add renderer
 			owner.addRenderer(new renderClass(
-				match[1],
-				self.generateUniqueSelector(element),
+				self.createTemplatePath(element, match[1]),
 				renderAttributeName
 			));
 
@@ -388,14 +407,73 @@ Template.prototype.addTextRenderers = function(element, owner) {
 
 			// Add renderer
 			owner.addRenderer(new TextRenderer(
-				match[1],
-				this.generateUniqueSelector(element)
+				this.createTemplatePath(element, match[1])
 			));
 
 			// Remove field selector from text node
 			element.text(null);
 		}
 	}
+};
+
+// Answer a new TemplatePath instance for the supplied selector and filter
+var fieldParser = new FieldParser();
+Template.prototype.createTemplatePath = function(element, fieldSelectorAndFilters) {
+
+	// Parse field selector and (optional) filters
+	var parseResult = fieldParser.parse(fieldSelectorAndFilters);
+	if(parseResult.value === undefined) {
+		throw new SyntaxError("Failed to parse field selector and/or filter <" + fieldSelectorAndFilters + "> @ " + parseResult.index + ": " + parseResult.errorCode);
+	} else if(parseResult.index !== fieldSelectorAndFilters.length) {
+		throw new SyntaxError("Failed to parse field selector and/or filter <" + fieldSelectorAndFilters + "> @ " + parseResult.index + ": EXTRA_CHARACTERS");
+	}
+
+	return new TemplatePath(this.generateUniqueSelector(element), this.createDataFunction(parseResult.value));
+};
+
+// Answer a d3 data function for specified field selector
+Template.prototype.createDataFunction = function(parseFieldResult) {
+	var fieldSelectors = parseFieldResult.fieldSelectors;
+	var filterReferences = parseFieldResult.filterReferences;
+
+	// Create initial value function
+	var initialValueFunction = function(d) {
+		return fieldSelectors.reduce(function(text, selector) {
+			return text !== undefined && text !== null ? text[selector] : text;
+		}, d);
+	};
+
+	// Decide if data function is tweenable (depends on last filter applied)
+	var isTweenFunction = false;
+	var lastFilterReference = filterReferences.length > 0 ? filterReferences[filterReferences.length - 1] : null;
+	if(lastFilterReference) {
+		var filter = namedRenderFilters[lastFilterReference.name];
+		if(filter && filter.isTweenFunction) {
+			isTweenFunction = true;
+		}
+	}
+
+	// Create data function based on filters and initial value
+	var dataFunction = function(d, i, nodes) {
+		var node = this;
+		return filterReferences.reduce(function(d, filterReference) {
+			var filter = namedRenderFilters[filterReference.name];
+			if(filter) {
+				var args = filterReference.args.slice(0);
+
+				// Prepend d
+				args.splice(0, 0, d);
+
+				// Append i and nodes
+				args.push(i, nodes);
+				return filter.apply(node, args);
+			}
+			return d;
+		}, initialValueFunction(d, i, nodes));
+	};
+	dataFunction.isTweenFunction = isTweenFunction;
+
+	return dataFunction;
 };
 
 // Generate a unique selector within group scope (this selector might be copied into siblings for repeating groups, so uniqueness is not absolute)
@@ -416,215 +494,6 @@ Template.prototype.generateUniqueSelector = function(element) {
 
 	// Answer the selector
 	return "[" + elementSelectorAttribute + "=\"" + selectorId + "\"]";
-};
-
-// TemplateNode - Renders data to a repeating group of elements
-function TemplateNode(fieldSelectorAndFilters, elementSelector, childElement) {
-
-	// Parse field selector and (optional) filters
-	var parseResult = fieldParser.parse(fieldSelectorAndFilters);
-	if(parseResult.value === undefined) {
-		throw new SyntaxError("Failed to parse field selector and/or filter <" + fieldSelectorAndFilters + "> @ " + parseResult.index + ": " + parseResult.errorCode);
-	} else if(parseResult.index !== fieldSelectorAndFilters.length) {
-		throw new SyntaxError("Failed to parse field selector and/or filter <" + fieldSelectorAndFilters + "> @ " + parseResult.index + ": EXTRA_CHARACTERS");
-	}
-
-	// Set instance variables
-	this.dataFunction = createDataFunction(parseResult.value);
-	this.elementSelector = elementSelector;
-	this.childElement = childElement;
-	this.eventHandlersMap = {};
-	this.childElements = [];
-	this.renderers = [];
-}
-
-// Class methods
-// Copy specified data onto all children of the element (recursively)
-TemplateNode.copyDataToChildren = function(data, element) {
-	element.selectAll(function() { return this.children; }).each(function() {
-		var childElement = select(this);
-		if(!childElement.classed(SCOPE_BOUNDARY)) {
-			childElement.datum(data);
-			TemplateNode.copyDataToChildren(data, childElement);
-		}
-	});
-};
-
-// Answer the element which should be rendered (indicated by the receivers elementSelector)
-TemplateNode.prototype.getElement = function(templateElement) {
-
-	// Element is either template element itself or child(ren) of the template element (but not both)
-	var selection = templateElement.filter(matcher(this.elementSelector));
-	if(selection.size() === 0) {
-		selection = templateElement.select(this.elementSelector);
-	}
-	return selection;
-};
-
-// Answer the data function
-TemplateNode.prototype.getDataFunction = function() {
-	return this.dataFunction;
-};
-
-TemplateNode.prototype.joinData = function(templateElement) {
-
-	// Sanity check
-	if(this.childElement.size() === 0) {
-		return;
-	}
-
-	// Join data onto DOM
-	var joinedElements = this.getElement(templateElement)
-		.selectAll(function() { return this.children; })
-			.data(this.getDataFunction())
-	;
-
-	// Add new elements
-	var self = this;
-	var newElements = joinedElements
-		.enter()
-			.append(function() { return self.childElement.node().cloneNode(true); })
-	;
-
-	// Add event handlers to new elements
-	Object.keys(this.eventHandlersMap).forEach(function(selector) {
-		var selection = newElements.filter(matcher(selector));
-		if(selection.size() === 0) {
-			selection = newElements.select(selector);
-		}
-		applyEventHandlers(self.eventHandlersMap[selector], selection);
-	});
-
-	// Remove superfluous elements
-	joinedElements
-		.exit()
-			.remove()
-	;
-
-	// Update data of children (both new and updated)
-	var childElements = newElements.merge(joinedElements);
-	childElements.each(function() {
-		var childElement = select(this);
-		var data = childElement.datum();	// Elements receive data in root by enter/append above
-		TemplateNode.copyDataToChildren(data, childElement);
-	});
-
-	// Create child elements
-	this.childElements.forEach(function(childElement) {
-		childElement.joinData(childElements);
-	});
-};
-
-TemplateNode.prototype.render = function(templateElement, transition) {
-
-	// Render children
-	var childElements = this.getElement(templateElement).selectAll(function() { return this.children; });
-	this.renderers.forEach(function(childRenderer) {
-		childRenderer.render(childElements, transition);
-	});
-	this.childElements.forEach(function(childElement) {
-		childElement.render(childElements, transition);
-	});
-};
-
-// Add event handlers for specified (sub)element (through a selector) to the receiver
-TemplateNode.prototype.addEventHandlers = function(selector, eventHandlers) {
-	var entry = this.eventHandlersMap[selector];
-	this.eventHandlersMap[selector] = entry ? entry.concat(eventHandlers) : eventHandlers;
-};
-
-// Add child (template) elements to the receiver
-TemplateNode.prototype.addChildElement = function(childElement) {
-	this.childElements.push(childElement);
-};
-
-// Add renderers for child elements to the receiver
-TemplateNode.prototype.addRenderer = function(renderer) {
-	this.renderers.push(renderer);
-};
-
-// Answer whether receiver is TemplateNode
-TemplateNode.prototype.isTemplateNode = function() {
-	return true;
-};
-
-// RepeatNode - Renders data to a repeating group of elements
-function RepeatNode(fieldSelector, elementSelector, childElement) {
-	TemplateNode.call(this, fieldSelector, elementSelector, childElement);
-}
-
-RepeatNode.prototype = Object.create(TemplateNode.prototype);
-RepeatNode.prototype.constructor = RepeatNode;
-
-// IfNode - Renders data to a conditional group of elements
-function IfNode(fieldSelector, elementSelector, childElement) {
-	TemplateNode.call(this, fieldSelector, elementSelector, childElement);
-}
-
-IfNode.prototype = Object.create(TemplateNode.prototype);
-IfNode.prototype.constructor = IfNode;
-
-IfNode.prototype.getDataFunction = function() {
-
-	// Use d3's data binding of arrays to handle conditionals.
-	// For conditional group create array with either the data as single element or empty array.
-	// This will ensure that a single element is created/updated or an existing element is removed.
-	var self = this;
-	return function(d, i, nodes) {
-		var node = this;
-		return TemplateNode.prototype.getDataFunction.call(self).call(node, d, i, nodes) ? [ d ] : [];
-	};
-};
-
-// WithNode - Renders data to a group of elements with new scope
-function WithNode(fieldSelector, elementSelector, childElement) {
-	TemplateNode.call(this, fieldSelector, elementSelector, childElement);
-}
-
-WithNode.prototype = Object.create(TemplateNode.prototype);
-WithNode.prototype.constructor = WithNode;
-
-WithNode.prototype.getDataFunction = function() {
-
-	// Use d3's data binding of arrays to handle with.
-	// For with group create array with the new scoped data as single element
-	// This will ensure that all children will receive newly scoped data
-	var self = this;
-	return function(d, i, nodes) {
-		var node = this;
-		return [ TemplateNode.prototype.getDataFunction.call(self).call(node, d, i, nodes) ];
-	};
-};
-
-// Helper functions
-
-// Apply specified event handlers onto selection
-function applyEventHandlers(eventHandlers, selection) {
-	eventHandlers.forEach(function(eventHandler) {
-		var typename = eventHandler.type;
-		if(eventHandler.name) {
-			typename += "." + eventHandler.name;
-		}
-		selection.on(typename, eventHandler.value, eventHandler.capture);
-	});
-}
-
-// Copy all event handlers of element (and its children) to the groupRenderer
-Template.prototype.copyEventHandlers = function(element, groupRenderer) {
-
-	// Add event handlers from element (root node)
-	var eventHandlers = element.node()[EVENT_HANDLERS];
-	if(eventHandlers && eventHandlers.length > 0) {
-		var selector = this.generateUniqueSelector(element);
-		groupRenderer.addEventHandlers(selector, eventHandlers);
-	}
-
-	// Add event handlers for direct children (recursively)
-	var self = this;
-	element.selectAll(function() { return this.children; }).each(function() {
-		var childElement = select(this);
-		self.copyEventHandlers(childElement, groupRenderer);
-	});
 };
 
 // Perform an import/clone of another DOM element (incl. its children)
