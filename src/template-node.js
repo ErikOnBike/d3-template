@@ -10,7 +10,7 @@ export function TemplateNode(templatePath, childElement) {
 	this.templatePath = templatePath;
 	this.childElement = childElement;
 	this.eventHandlersMap = {};
-	this.childElements = [];
+	this.childNodes = [];
 	this.renderers = [];
 }
 
@@ -86,8 +86,8 @@ TemplateNode.prototype.joinData = function(templateElement) {
 	});
 
 	// Create child elements
-	this.childElements.forEach(function(childElement) {
-		childElement.joinData(childElements);
+	this.childNodes.forEach(function(childNode) {
+		childNode.joinData(childElements);
 	});
 };
 
@@ -98,8 +98,8 @@ TemplateNode.prototype.render = function(templateElement, transition) {
 	this.renderers.forEach(function(childRenderer) {
 		childRenderer.render(childElements, transition);
 	});
-	this.childElements.forEach(function(childElement) {
-		childElement.render(childElements, transition);
+	this.childNodes.forEach(function(childNode) {
+		childNode.render(childElements, transition);
 	});
 };
 
@@ -111,7 +111,7 @@ TemplateNode.prototype.addEventHandlers = function(selector, eventHandlers) {
 
 // Add child (template) elements to the receiver
 TemplateNode.prototype.addChildElement = function(childElement) {
-	this.childElements.push(childElement);
+	this.childNodes.push(childElement);
 };
 
 // Add renderers for child elements to the receiver
