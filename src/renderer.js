@@ -67,8 +67,8 @@ Renderer.prototype.getElement = function(templateElement) {
 	return selection;
 };
 
-// Answer whether receiver is TemplateElement
-Renderer.prototype.isTemplateElement = function() {
+// Answer whether receiver is TemplateNode
+Renderer.prototype.isTemplateNode = function() {
 	return false;
 };
 
@@ -226,8 +226,8 @@ PropertyRenderer.prototype.render = function(templateElement, transition) {
 	}
 };
 
-// TemplateElement - Renders data to a repeating group of elements
-export function TemplateElement(fieldSelectorAndFilters, elementSelector, childElement) {
+// TemplateNode - Renders data to a repeating group of elements
+export function TemplateNode(fieldSelectorAndFilters, elementSelector, childElement) {
 
 	// Parse field selector and (optional) filters
 	var parseResult = fieldParser.parse(fieldSelectorAndFilters);
@@ -247,7 +247,7 @@ export function TemplateElement(fieldSelectorAndFilters, elementSelector, childE
 }
 
 // Answer the element which should be rendered (indicated by the receivers elementSelector)
-TemplateElement.prototype.getElement = function(templateElement) {
+TemplateNode.prototype.getElement = function(templateElement) {
 
 	// Element is either template element itself or child(ren) of the template element (but not both)
 	var selection = templateElement.filter(matcher(this.elementSelector));
@@ -258,11 +258,11 @@ TemplateElement.prototype.getElement = function(templateElement) {
 };
 
 // Answer the data function
-TemplateElement.prototype.getDataFunction = function() {
+TemplateNode.prototype.getDataFunction = function() {
 	return this.dataFunction;
 };
 
-TemplateElement.prototype.joinData = function(templateElement) {
+TemplateNode.prototype.joinData = function(templateElement) {
 
 	// Sanity check
 	if(this.childElement.size() === 0) {
@@ -311,7 +311,7 @@ TemplateElement.prototype.joinData = function(templateElement) {
 	});
 };
 
-TemplateElement.prototype.render = function(templateElement, transition) {
+TemplateNode.prototype.render = function(templateElement, transition) {
 
 	// Render children
 	var childElements = this.getElement(templateElement).selectAll(function() { return this.children; });
@@ -324,40 +324,40 @@ TemplateElement.prototype.render = function(templateElement, transition) {
 };
 
 // Add event handlers for specified (sub)element (through a selector) to the receiver
-TemplateElement.prototype.addEventHandlers = function(selector, eventHandlers) {
+TemplateNode.prototype.addEventHandlers = function(selector, eventHandlers) {
 	var entry = this.eventHandlersMap[selector];
 	this.eventHandlersMap[selector] = entry ? entry.concat(eventHandlers) : eventHandlers;
 };
 
 // Add child (template) elements to the receiver
-TemplateElement.prototype.addChildElement = function(childElement) {
+TemplateNode.prototype.addChildElement = function(childElement) {
 	this.childElements.push(childElement);
 };
 
 // Add renderers for child elements to the receiver
-TemplateElement.prototype.addRenderer = function(renderer) {
+TemplateNode.prototype.addRenderer = function(renderer) {
 
 	// Append group renderers in order received, but insert non-group renderers like attribute, style or
 	// property renderers (on the same element)
 	// This allows filters on repeat elements to use the attribute or style values which are also be rendered
-	if(!renderer.isTemplateElement()) {
+	if(!renderer.isTemplateNode()) {
 
 		// Find first group renderer which will render on the same element
-		var firstTemplateElementIndex = -1;
+		var firstTemplateNodeIndex = -1;
 		var currentIndex = this.renderers.length - 1;
-		var isTemplateElementOnSameElement = function(currentRenderer) {
+		var isTemplateNodeOnSameElement = function(currentRenderer) {
 			return currentRenderer.elementSelector === renderer.elementSelector &&
-				currentRenderer.isTemplateElement()
+				currentRenderer.isTemplateNode()
 			;
 		};
-		while(currentIndex >= 0 && isTemplateElementOnSameElement(this.renderers[currentIndex])) {
-			firstTemplateElementIndex = currentIndex;
+		while(currentIndex >= 0 && isTemplateNodeOnSameElement(this.renderers[currentIndex])) {
+			firstTemplateNodeIndex = currentIndex;
 			currentIndex--;
 		}
 
 		// If such group renderer is found, insert (attr/style) renderer before (otherwise append)
-		if(firstTemplateElementIndex >= 0) {
-			//this.renderers.splice(firstTemplateElementIndex, 0, renderer);
+		if(firstTemplateNodeIndex >= 0) {
+			//this.renderers.splice(firstTemplateNodeIndex, 0, renderer);
 			throw new Error("Internal error. Should not occur anymore");
 		} else {
 			this.renderers.push(renderer);
@@ -367,28 +367,28 @@ TemplateElement.prototype.addRenderer = function(renderer) {
 	}
 };
 
-// Answer whether receiver is TemplateElement
-TemplateElement.prototype.isTemplateElement = function() {
+// Answer whether receiver is TemplateNode
+TemplateNode.prototype.isTemplateNode = function() {
 	return true;
 };
 
-// RepeatRenderer - Renders data to a repeating group of elements
-export function RepeatRenderer(fieldSelector, elementSelector, childElement) {
-	TemplateElement.call(this, fieldSelector, elementSelector, childElement);
+// RepeatNode - Renders data to a repeating group of elements
+export function RepeatNode(fieldSelector, elementSelector, childElement) {
+	TemplateNode.call(this, fieldSelector, elementSelector, childElement);
 }
 
-RepeatRenderer.prototype = Object.create(TemplateElement.prototype);
-RepeatRenderer.prototype.constructor = RepeatRenderer;
+RepeatNode.prototype = Object.create(TemplateNode.prototype);
+RepeatNode.prototype.constructor = RepeatNode;
 
-// IfRenderer - Renders data to a conditional group of elements
-export function IfRenderer(fieldSelector, elementSelector, childElement) {
-	TemplateElement.call(this, fieldSelector, elementSelector, childElement);
+// IfNode - Renders data to a conditional group of elements
+export function IfNode(fieldSelector, elementSelector, childElement) {
+	TemplateNode.call(this, fieldSelector, elementSelector, childElement);
 }
 
-IfRenderer.prototype = Object.create(TemplateElement.prototype);
-IfRenderer.prototype.constructor = IfRenderer;
+IfNode.prototype = Object.create(TemplateNode.prototype);
+IfNode.prototype.constructor = IfNode;
 
-IfRenderer.prototype.getDataFunction = function() {
+IfNode.prototype.getDataFunction = function() {
 
 	// Use d3's data binding of arrays to handle conditionals.
 	// For conditional group create array with either the data as single element or empty array.
@@ -396,19 +396,19 @@ IfRenderer.prototype.getDataFunction = function() {
 	var self = this;
 	return function(d, i, nodes) {
 		var node = this;
-		return TemplateElement.prototype.getDataFunction.call(self).call(node, d, i, nodes) ? [ d ] : [];
+		return TemplateNode.prototype.getDataFunction.call(self).call(node, d, i, nodes) ? [ d ] : [];
 	};
 };
 
-// WithRenderer - Renders data to a group of elements with new scope
-export function WithRenderer(fieldSelector, elementSelector, childElement) {
-	TemplateElement.call(this, fieldSelector, elementSelector, childElement);
+// WithNode - Renders data to a group of elements with new scope
+export function WithNode(fieldSelector, elementSelector, childElement) {
+	TemplateNode.call(this, fieldSelector, elementSelector, childElement);
 }
 
-WithRenderer.prototype = Object.create(TemplateElement.prototype);
-WithRenderer.prototype.constructor = WithRenderer;
+WithNode.prototype = Object.create(TemplateNode.prototype);
+WithNode.prototype.constructor = WithNode;
 
-WithRenderer.prototype.getDataFunction = function() {
+WithNode.prototype.getDataFunction = function() {
 
 	// Use d3's data binding of arrays to handle with.
 	// For with group create array with the new scoped data as single element
@@ -416,7 +416,7 @@ WithRenderer.prototype.getDataFunction = function() {
 	var self = this;
 	return function(d, i, nodes) {
 		var node = this;
-		return [ TemplateElement.prototype.getDataFunction.call(self).call(node, d, i, nodes) ];
+		return [ TemplateNode.prototype.getDataFunction.call(self).call(node, d, i, nodes) ];
 	};
 };
 
