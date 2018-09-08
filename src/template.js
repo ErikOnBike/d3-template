@@ -158,6 +158,7 @@ export function render(selectionOrTransition, data, options) {
 // Template class
 function Template(options) {
 	this.options = options;
+	this.childElements = [];
 	this.renderers = [];
 }
 
@@ -179,12 +180,18 @@ Template.joinData = function(data, element) {
 // Instance methods
 // Add renderers
 Template.prototype.addRenderer = TemplateElement.prototype.addRenderer;
+Template.prototype.addChildElement = TemplateElement.prototype.addChildElement;
 
 // Render data on specified template element
 Template.prototype.render = function(data, element, transition) {
 
 	// Join data
 	Template.joinData(data, element);
+
+	// Create child elements
+	this.childElements.forEach(function(childElement) {
+		childElement.render(element, transition);
+	});
 
 	// Render data on element
 	this.renderers.forEach(function(renderer) {
@@ -261,7 +268,7 @@ Template.prototype.addTemplateElements = function(element, owner) {
 			this.generateUniqueSelector(element),
 			childElement
 		);
-		owner.addRenderer(groupRenderer);
+		owner.addChildElement(groupRenderer);
 
 		// Remove group attribute
 		element.attr(group.attr, null);

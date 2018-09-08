@@ -242,6 +242,7 @@ export function TemplateElement(fieldSelectorAndFilters, elementSelector, childE
 	this.elementSelector = elementSelector;
 	this.childElement = childElement;
 	this.eventHandlersMap = {};
+	this.childElements = [];
 	this.renderers = [];
 }
 
@@ -304,6 +305,11 @@ TemplateElement.prototype.render = function(templateElement, transition) {
 		copyDataToChildren(data, childElement);
 	});
 
+	// Create child elements
+	this.childElements.forEach(function(childElement) {
+		childElement.render(childElements, transition);
+	});
+
 	// Render children
 	this.renderers.forEach(function(childRenderer) {
 		childRenderer.render(childElements, transition);
@@ -314,6 +320,11 @@ TemplateElement.prototype.render = function(templateElement, transition) {
 TemplateElement.prototype.addEventHandlers = function(selector, eventHandlers) {
 	var entry = this.eventHandlersMap[selector];
 	this.eventHandlersMap[selector] = entry ? entry.concat(eventHandlers) : eventHandlers;
+};
+
+// Add child (template) elements to the receiver
+TemplateElement.prototype.addChildElement = function(childElement) {
+	this.childElements.push(childElement);
 };
 
 // Add renderers for child elements to the receiver
@@ -339,7 +350,8 @@ TemplateElement.prototype.addRenderer = function(renderer) {
 
 		// If such group renderer is found, insert (attr/style) renderer before (otherwise append)
 		if(firstTemplateElementIndex >= 0) {
-			this.renderers.splice(firstTemplateElementIndex, 0, renderer);
+			//this.renderers.splice(firstTemplateElementIndex, 0, renderer);
+			throw new Error("Internal error. Should not occur anymore");
 		} else {
 			this.renderers.push(renderer);
 		}
@@ -375,7 +387,7 @@ IfRenderer.prototype.getDataFunction = function() {
 	// For conditional group create array with either the data as single element or empty array.
 	// This will ensure that a single element is created/updated or an existing element is removed.
 	var self = this;
-	return function(d, i, nodes) { return Renderer.prototype.getDataFunction.call(self)(d, i, nodes) ? [ d ] : []; };
+	return function(d, i, nodes) { return TemplateElement.prototype.getDataFunction.call(self)(d, i, nodes) ? [ d ] : []; };
 };
 
 // WithRenderer - Renders data to a group of elements with new scope
@@ -394,7 +406,7 @@ WithRenderer.prototype.getDataFunction = function() {
 	var self = this;
 	return function(d, i, nodes) {
 		var node = this;
-		return [ Renderer.prototype.getDataFunction.call(self).call(node, d, i, nodes) ];
+		return [ TemplateElement.prototype.getDataFunction.call(self).call(node, d, i, nodes) ];
 	};
 };
 
