@@ -161,7 +161,7 @@ export function render(selectionOrTransition, data, options) {
 // Template class
 export function Template(options) {
 	this.options = options;
-	this.childElements = [];
+	this.childNodes = [];
 	this.renderers = [];
 }
 
@@ -188,7 +188,7 @@ Template.prototype.render = function(data, element, transition) {
 	Template.joinData(data, element);
 
 	// Join data on child elements (creating DOM in the process)
-	this.childElements.forEach(function(childElement) {
+	this.childNodes.forEach(function(childElement) {
 		childElement.joinData(element);
 	});
 
@@ -196,7 +196,7 @@ Template.prototype.render = function(data, element, transition) {
 	this.renderers.forEach(function(renderer) {
 		renderer.render(element, transition);
 	});
-	this.childElements.forEach(function(childElement) {
+	this.childNodes.forEach(function(childElement) {
 		childElement.render(element, transition);
 	});
 };
