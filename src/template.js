@@ -540,35 +540,7 @@ TemplateNode.prototype.addChildElement = function(childElement) {
 
 // Add renderers for child elements to the receiver
 TemplateNode.prototype.addRenderer = function(renderer) {
-
-	// Append group renderers in order received, but insert non-group renderers like attribute, style or
-	// property renderers (on the same element)
-	// This allows filters on repeat elements to use the attribute or style values which are also be rendered
-	if(!renderer.isTemplateNode()) {
-
-		// Find first group renderer which will render on the same element
-		var firstTemplateNodeIndex = -1;
-		var currentIndex = this.renderers.length - 1;
-		var isTemplateNodeOnSameElement = function(currentRenderer) {
-			return currentRenderer.elementSelector === renderer.elementSelector &&
-				currentRenderer.isTemplateNode()
-			;
-		};
-		while(currentIndex >= 0 && isTemplateNodeOnSameElement(this.renderers[currentIndex])) {
-			firstTemplateNodeIndex = currentIndex;
-			currentIndex--;
-		}
-
-		// If such group renderer is found, insert (attr/style) renderer before (otherwise append)
-		if(firstTemplateNodeIndex >= 0) {
-			//this.renderers.splice(firstTemplateNodeIndex, 0, renderer);
-			throw new Error("Internal error. Should not occur anymore");
-		} else {
-			this.renderers.push(renderer);
-		}
-	} else {
-		this.renderers.push(renderer);
-	}
+	this.renderers.push(renderer);
 };
 
 // Answer whether receiver is TemplateNode
