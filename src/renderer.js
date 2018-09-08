@@ -262,7 +262,7 @@ TemplateElement.prototype.getDataFunction = function() {
 	return this.dataFunction;
 };
 
-TemplateElement.prototype.render = function(templateElement, transition) {
+TemplateElement.prototype.joinData = function(templateElement) {
 
 	// Sanity check
 	if(this.childElement.size() === 0) {
@@ -307,12 +307,19 @@ TemplateElement.prototype.render = function(templateElement, transition) {
 
 	// Create child elements
 	this.childElements.forEach(function(childElement) {
-		childElement.render(childElements, transition);
+		childElement.joinData(childElements);
 	});
+};
+
+TemplateElement.prototype.render = function(templateElement, transition) {
 
 	// Render children
+	var childElements = this.getElement(templateElement).selectAll(function() { return this.children; });
 	this.renderers.forEach(function(childRenderer) {
 		childRenderer.render(childElements, transition);
+	});
+	this.childElements.forEach(function(childElement) {
+		childElement.render(childElements, transition);
 	});
 };
 
