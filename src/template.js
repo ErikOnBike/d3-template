@@ -1,6 +1,5 @@
-import {select} from "d3-selection";
-import {TemplateElement, RepeatRenderer, IfRenderer, WithRenderer, AttributeRenderer, StyleRenderer, PropertyRenderer, TextRenderer} from "./renderer";
-import {SCOPE_BOUNDARY} from "./constants";
+import {select,matcher} from "d3-selection";
+import {fieldParser, createDataFunction, AttributeRenderer, StyleRenderer, PropertyRenderer, TextRenderer} from "./renderer";
 
 // Defaults
 var defaults = {
@@ -16,6 +15,7 @@ var FIELD_SELECTOR_REG_EX = /^\s*\{\{\s*(.*)\s*\}\}\s*$/u;
 var ATTRIBUTE_REFERENCE_REG_EX = /^data-attr-(.*)$/u;
 var STYLE_REFERENCE_REG_EX = /^data-style-(.*)$/u;
 var PROPERTY_REFERENCE_REG_EX = /^data-prop-(.*)$/u;
+var SCOPE_BOUNDARY = "d3t7s";
 var EVENT_HANDLERS = "__on";
 var SVG_CAMEL_CASE_ATTRS = {};	// Combined SVG 1.1 and SVG 2 (draft 14 feb 2018)
 [
@@ -178,10 +178,6 @@ Template.joinData = function(data, element) {
 };
 
 // Instance methods
-// Add renderers
-Template.prototype.addRenderer = TemplateElement.prototype.addRenderer;
-Template.prototype.addChildElement = TemplateElement.prototype.addChildElement;
-
 // Render data on specified template element
 Template.prototype.render = function(data, element, transition) {
 
@@ -226,9 +222,9 @@ Template.prototype.addTemplateElements = function(element, owner) {
 
 	// Handle groups
 	var groups = [
-		{ attr: this.options.repeatAttribute, renderClass: RepeatRenderer, match: false },
-		{ attr: this.options.ifAttribute, renderClass: IfRenderer, match: false },
-		{ attr: this.options.withAttribute, renderClass: WithRenderer, match: false }
+		{ attr: this.options.repeatAttribute, renderClass: RepeatNode, match: false },
+		{ attr: this.options.ifAttribute, renderClass: IfNode, match: false },
+		{ attr: this.options.withAttribute, renderClass: WithNode, match: false }
 	];
 
 	// Collect group info from element
@@ -422,6 +418,225 @@ Template.prototype.generateUniqueSelector = function(element) {
 	return "[" + elementSelectorAttribute + "=\"" + selectorId + "\"]";
 };
 
+// TemplateNode - Renders data to a repeating group of elements
+function TemplateNode(fieldSelectorAndFilters, elementSelector, childElement) {
+
+	// Parse field selector and (optional) filters
+	var parseResult = fieldParser.parse(fieldSelectorAndFilters);
+	if(parseResult.value === undefined) {
+		throw new SyntaxError("Failed to parse field selector and/or filter <" + fieldSelectorAndFilters + "> @ " + parseResult.index + ": " + parseResult.errorCode);
+	} else if(parseResult.index !== fieldSelectorAndFilters.length) {
+		throw new SyntaxError("Failed to parse field selector and/or filter <" + fieldSelectorAndFilters + "> @ " + parseResult.index + ": EXTRA_CHARACTERS");
+	}
+
+	// Set instance variables
+	this.dataFunction = createDataFunction(parseResult.value);
+	this.elementSelector = elementSelector;
+	this.childElement = childElement;
+	this.eventHandlersMap = {};
+	this.childElements = [];
+	this.renderers = [];
+}
+
+// Class methods
+// Copy specified data onto all children of the element (recursively)
+TemplateNode.copyDataToChildren = function(data, element) {
+	element.selectAll(function() { return this.children; }).each(function() {
+		var childElement = select(this);
+		if(!childElement.classed(SCOPE_BOUNDARY)) {
+			childElement.datum(data);
+			TemplateNode.copyDataToChildren(data, childElement);
+		}
+	});
+};
+
+// Answer the element which should be rendered (indicated by the receivers elementSelector)
+TemplateNode.prototype.getElement = function(templateElement) {
+
+	// Element is either template element itself or child(ren) of the template element (but not both)
+	var selection = templateElement.filter(matcher(this.elementSelector));
+	if(selection.size() === 0) {
+		selection = templateElement.select(this.elementSelector);
+	}
+	return selection;
+};
+
+// Answer the data function
+TemplateNode.prototype.getDataFunction = function() {
+	return this.dataFunction;
+};
+
+TemplateNode.prototype.joinData = function(templateElement) {
+
+	// Sanity check
+	if(this.childElement.size() === 0) {
+		return;
+	}
+
+	// Join data onto DOM
+	var joinedElements = this.getElement(templateElement)
+		.selectAll(function() { return this.children; })
+			.data(this.getDataFunction())
+	;
+
+	// Add new elements
+	var self = this;
+	var newElements = joinedElements
+		.enter()
+			.append(function() { return self.childElement.node().cloneNode(true); })
+	;
+
+	// Add event handlers to new elements
+	Object.keys(this.eventHandlersMap).forEach(function(selector) {
+		var selection = newElements.filter(matcher(selector));
+		if(selection.size() === 0) {
+			selection = newElements.select(selector);
+		}
+		applyEventHandlers(self.eventHandlersMap[selector], selection);
+	});
+
+	// Remove superfluous elements
+	joinedElements
+		.exit()
+			.remove()
+	;
+
+	// Update data of children (both new and updated)
+	var childElements = newElements.merge(joinedElements);
+	childElements.each(function() {
+		var childElement = select(this);
+		var data = childElement.datum();	// Elements receive data in root by enter/append above
+		TemplateNode.copyDataToChildren(data, childElement);
+	});
+
+	// Create child elements
+	this.childElements.forEach(function(childElement) {
+		childElement.joinData(childElements);
+	});
+};
+
+TemplateNode.prototype.render = function(templateElement, transition) {
+
+	// Render children
+	var childElements = this.getElement(templateElement).selectAll(function() { return this.children; });
+	this.renderers.forEach(function(childRenderer) {
+		childRenderer.render(childElements, transition);
+	});
+	this.childElements.forEach(function(childElement) {
+		childElement.render(childElements, transition);
+	});
+};
+
+// Add event handlers for specified (sub)element (through a selector) to the receiver
+TemplateNode.prototype.addEventHandlers = function(selector, eventHandlers) {
+	var entry = this.eventHandlersMap[selector];
+	this.eventHandlersMap[selector] = entry ? entry.concat(eventHandlers) : eventHandlers;
+};
+
+// Add child (template) elements to the receiver
+TemplateNode.prototype.addChildElement = function(childElement) {
+	this.childElements.push(childElement);
+};
+
+// Add renderers for child elements to the receiver
+TemplateNode.prototype.addRenderer = function(renderer) {
+
+	// Append group renderers in order received, but insert non-group renderers like attribute, style or
+	// property renderers (on the same element)
+	// This allows filters on repeat elements to use the attribute or style values which are also be rendered
+	if(!renderer.isTemplateNode()) {
+
+		// Find first group renderer which will render on the same element
+		var firstTemplateNodeIndex = -1;
+		var currentIndex = this.renderers.length - 1;
+		var isTemplateNodeOnSameElement = function(currentRenderer) {
+			return currentRenderer.elementSelector === renderer.elementSelector &&
+				currentRenderer.isTemplateNode()
+			;
+		};
+		while(currentIndex >= 0 && isTemplateNodeOnSameElement(this.renderers[currentIndex])) {
+			firstTemplateNodeIndex = currentIndex;
+			currentIndex--;
+		}
+
+		// If such group renderer is found, insert (attr/style) renderer before (otherwise append)
+		if(firstTemplateNodeIndex >= 0) {
+			//this.renderers.splice(firstTemplateNodeIndex, 0, renderer);
+			throw new Error("Internal error. Should not occur anymore");
+		} else {
+			this.renderers.push(renderer);
+		}
+	} else {
+		this.renderers.push(renderer);
+	}
+};
+
+// Answer whether receiver is TemplateNode
+TemplateNode.prototype.isTemplateNode = function() {
+	return true;
+};
+
+// RepeatNode - Renders data to a repeating group of elements
+function RepeatNode(fieldSelector, elementSelector, childElement) {
+	TemplateNode.call(this, fieldSelector, elementSelector, childElement);
+}
+
+RepeatNode.prototype = Object.create(TemplateNode.prototype);
+RepeatNode.prototype.constructor = RepeatNode;
+
+// IfNode - Renders data to a conditional group of elements
+function IfNode(fieldSelector, elementSelector, childElement) {
+	TemplateNode.call(this, fieldSelector, elementSelector, childElement);
+}
+
+IfNode.prototype = Object.create(TemplateNode.prototype);
+IfNode.prototype.constructor = IfNode;
+
+IfNode.prototype.getDataFunction = function() {
+
+	// Use d3's data binding of arrays to handle conditionals.
+	// For conditional group create array with either the data as single element or empty array.
+	// This will ensure that a single element is created/updated or an existing element is removed.
+	var self = this;
+	return function(d, i, nodes) {
+		var node = this;
+		return TemplateNode.prototype.getDataFunction.call(self).call(node, d, i, nodes) ? [ d ] : [];
+	};
+};
+
+// WithNode - Renders data to a group of elements with new scope
+function WithNode(fieldSelector, elementSelector, childElement) {
+	TemplateNode.call(this, fieldSelector, elementSelector, childElement);
+}
+
+WithNode.prototype = Object.create(TemplateNode.prototype);
+WithNode.prototype.constructor = WithNode;
+
+WithNode.prototype.getDataFunction = function() {
+
+	// Use d3's data binding of arrays to handle with.
+	// For with group create array with the new scoped data as single element
+	// This will ensure that all children will receive newly scoped data
+	var self = this;
+	return function(d, i, nodes) {
+		var node = this;
+		return [ TemplateNode.prototype.getDataFunction.call(self).call(node, d, i, nodes) ];
+	};
+};
+
+// Helper functions
+
+// Apply specified event handlers onto selection
+function applyEventHandlers(eventHandlers, selection) {
+	eventHandlers.forEach(function(eventHandler) {
+		var typename = eventHandler.type;
+		if(eventHandler.name) {
+			typename += "." + eventHandler.name;
+		}
+		selection.on(typename, eventHandler.value, eventHandler.capture);
+	});
+}
+
 // Copy all event handlers of element (and its children) to the groupRenderer
 Template.prototype.copyEventHandlers = function(element, groupRenderer) {
 
@@ -465,3 +680,8 @@ Template.prototype.performImport = function(element) {
 		;
 	}
 };
+
+// Add renderers
+Template.prototype.addRenderer = TemplateNode.prototype.addRenderer;
+Template.prototype.addChildElement = TemplateNode.prototype.addChildElement;
+
