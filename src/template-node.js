@@ -4,12 +4,10 @@ import { select, matcher } from "d3-selection";
 var SCOPE_BOUNDARY = "d3t7s";
 
 // TemplateNode - Renders data to a repeating group of elements
-export function TemplateNode(templatePath, childElement) {
+export function TemplateNode(templatePath) {
 
 	// Set instance variables
 	this.templatePath = templatePath;
-	this.childElement = childElement;
-	this.eventHandlersMap = {};
 	this.childNodes = [];
 	this.renderers = [];
 }
@@ -42,7 +40,58 @@ TemplateNode.prototype.getDataFunction = function() {
 	return this.getTemplatePath().getDataFunction();
 };
 
-TemplateNode.prototype.joinData = function(templateElement) {
+TemplateNode.prototype.render = function(templateElement, transition) {
+
+	// Render children
+	var childElements = this.getElementIn(templateElement).selectAll(function() { return this.children; });
+	this.renderers.forEach(function(childRenderer) {
+		childRenderer.render(childElements, transition);
+	});
+	this.childNodes.forEach(function(childNode) {
+		childNode.render(childElements, transition);
+	});
+};
+
+// Add child (template) elements to the receiver
+TemplateNode.prototype.addChildNode = function(childNode) {
+	this.childNodes.push(childNode);
+};
+
+// Add renderers for child elements to the receiver
+TemplateNode.prototype.addRenderer = function(renderer) {
+	this.renderers.push(renderer);
+};
+
+// GroupingNode class
+function GroupingNode(templatePath, childElement) {
+	TemplateNode.call(this, templatePath);
+	this.childElement = childElement;
+	this.eventHandlersMap = {};
+}
+GroupingNode.prototype = Object.create(TemplateNode.prototype);
+GroupingNode.prototype.constructor = GroupingNode;
+
+// Class methods
+// Add event handlers for specified (sub)element (through a selector) to the receiver
+GroupingNode.prototype.addEventHandlers = function(selector, eventHandlers) {
+	var entry = this.eventHandlersMap[selector];
+	this.eventHandlersMap[selector] = entry ? entry.concat(eventHandlers) : eventHandlers;
+};
+
+// Apply specified event handlers onto selection
+GroupingNode.applyEventHandlers = function(eventHandlers, selection) {
+	eventHandlers.forEach(function(eventHandler) {
+		var typename = eventHandler.type;
+		if(eventHandler.name) {
+			typename += "." + eventHandler.name;
+		}
+		selection.on(typename, eventHandler.value, eventHandler.capture);
+	});
+};
+
+// Instance methods
+// Join data onto the receiver (using templateElement as base for selecting the DOM elements)
+GroupingNode.prototype.joinData = function(templateElement) {
 
 	// Sanity check
 	if(this.childElement.size() === 0) {
@@ -68,7 +117,7 @@ TemplateNode.prototype.joinData = function(templateElement) {
 		if(selection.size() === 0) {
 			selection = newElements.select(selector);
 		}
-		self.applyEventHandlers(self.eventHandlersMap[selector], selection);
+		GroupingNode.applyEventHandlers(self.eventHandlersMap[selector], selection);
 	});
 
 	// Remove superfluous elements
@@ -91,48 +140,19 @@ TemplateNode.prototype.joinData = function(templateElement) {
 	});
 };
 
-TemplateNode.prototype.render = function(templateElement, transition) {
-
-	// Render children
-	var childElements = this.getElementIn(templateElement).selectAll(function() { return this.children; });
-	this.renderers.forEach(function(childRenderer) {
-		childRenderer.render(childElements, transition);
-	});
-	this.childNodes.forEach(function(childNode) {
-		childNode.render(childElements, transition);
-	});
-};
-
-// Add event handlers for specified (sub)element (through a selector) to the receiver
-TemplateNode.prototype.addEventHandlers = function(selector, eventHandlers) {
-	var entry = this.eventHandlersMap[selector];
-	this.eventHandlersMap[selector] = entry ? entry.concat(eventHandlers) : eventHandlers;
-};
-
-// Add child (template) elements to the receiver
-TemplateNode.prototype.addChildNode = function(childNode) {
-	this.childNodes.push(childNode);
-};
-
-// Add renderers for child elements to the receiver
-TemplateNode.prototype.addRenderer = function(renderer) {
-	this.renderers.push(renderer);
-};
-
 // RepeatNode - Renders data to a repeating group of elements
 export function RepeatNode(templatePath, childElement) {
-	TemplateNode.call(this, templatePath, childElement);
+	GroupingNode.call(this, templatePath, childElement);
 }
-
-RepeatNode.prototype = Object.create(TemplateNode.prototype);
+RepeatNode.prototype = Object.create(GroupingNode.prototype);
 RepeatNode.prototype.constructor = RepeatNode;
 
 // IfNode - Renders data to a conditional group of elements
 export function IfNode(templatePath, childElement) {
-	TemplateNode.call(this, templatePath, childElement);
+	GroupingNode.call(this, templatePath, childElement);
 }
 
-IfNode.prototype = Object.create(TemplateNode.prototype);
+IfNode.prototype = Object.create(GroupingNode.prototype);
 IfNode.prototype.constructor = IfNode;
 
 IfNode.prototype.getDataFunction = function() {
@@ -149,10 +169,10 @@ IfNode.prototype.getDataFunction = function() {
 
 // WithNode - Renders data to a group of elements with new scope
 export function WithNode(templatePath, childElement) {
-	TemplateNode.call(this, templatePath, childElement);
+	GroupingNode.call(this, templatePath, childElement);
 }
 
-WithNode.prototype = Object.create(TemplateNode.prototype);
+WithNode.prototype = Object.create(GroupingNode.prototype);
 WithNode.prototype.constructor = WithNode;
 
 WithNode.prototype.getDataFunction = function() {
@@ -165,17 +185,4 @@ WithNode.prototype.getDataFunction = function() {
 		var node = this;
 		return [ TemplateNode.prototype.getDataFunction.call(self).call(node, d, i, nodes) ];
 	};
-};
-
-// Helper functions
-
-// Apply specified event handlers onto selection
-TemplateNode.prototype.applyEventHandlers = function(eventHandlers, selection) {
-	eventHandlers.forEach(function(eventHandler) {
-		var typename = eventHandler.type;
-		if(eventHandler.name) {
-			typename += "." + eventHandler.name;
-		}
-		selection.on(typename, eventHandler.value, eventHandler.capture);
-	});
 };

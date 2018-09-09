@@ -185,8 +185,8 @@ Template.prototype.render = function(data, element, transition) {
 	Template.joinData(data, element);
 
 	// Join data on child elements (creating DOM in the process)
-	this.childNodes.forEach(function(childElement) {
-		childElement.joinData(element);
+	this.childNodes.forEach(function(childNode) {
+		childNode.joinData(element);
 	});
 
 	// Render data on element
