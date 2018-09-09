@@ -96,7 +96,7 @@ function parseFormatString(formatString) {
 
 			// Append data function for field selector and filter references
 			result.push({
-				dataFunction: Template.prototype.createDataFunction.call(null, parseResult.value)
+				dataFunction: Template.createDataFunction(parseResult.value)
 			});
 
 			// Update index for further parsing (+ 1 to skip closing curly brace)

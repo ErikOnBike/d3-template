@@ -6,7 +6,6 @@ import { namedRenderFilters, AttributeRenderer, StyleRenderer, PropertyRenderer,
 
 // Defaults
 var defaults = {
-	elementSelectorAttribute: "data-template",
 	repeatAttribute: "data-repeat",
 	ifAttribute: "data-if",
 	withAttribute: "data-with",
@@ -18,7 +17,8 @@ var FIELD_SELECTOR_REG_EX = /^\s*\{\{\s*(.*)\s*\}\}\s*$/u;
 var ATTRIBUTE_REFERENCE_REG_EX = /^data-attr-(.*)$/u;
 var STYLE_REFERENCE_REG_EX = /^data-style-(.*)$/u;
 var PROPERTY_REFERENCE_REG_EX = /^data-prop-(.*)$/u;
-var SCOPE_BOUNDARY = "d3t7s";
+var ELEMENT_SELECTOR_ATTRIBUTE = "data-d3t7s";
+var SCOPE_BOUNDARY_CLASS = "d3t7s";
 var EVENT_HANDLERS = "__on";
 var SVG_CAMEL_CASE_ATTRS = {};	// Combined SVG 1.1 and SVG 2 (draft 14 feb 2018)
 [
@@ -115,13 +115,13 @@ export function template(selection, options) {
 		var template = new Template(options);
 
 		// Generate unique selector so template can be referenced
-		template.generateUniqueSelector(element);
+		Template.generateUniqueSelector(element);
 
 		// Add renderers so template can be rendered when data is provided
 		template.addRenderers(element, template);
 
 		// Store template 
-		var templateSelector = element.attr(options.elementSelectorAttribute);
+		var templateSelector = element.attr(ELEMENT_SELECTOR_ATTRIBUTE);
 		templates[templateSelector] = template;
 	});
 
@@ -129,15 +129,12 @@ export function template(selection, options) {
 }
 
 // Render data on receiver (ie, a selection or transition since this method will be added to the d3 selection and transition prototypes)
-export function selection_render(data, options) {
-	return render(this, data, options);
+export function selection_render(data) {
+	return render(this, data);
 }
 
 // Render data on specified selection (selection should consist of a template)
-export function render(selectionOrTransition, data, options) {
-
-	// Decide to use options or defaults
-	options = Object.assign({}, defaults, options || {});
+export function render(selectionOrTransition, data) {
 
 	// Render templates in the current selection
 	var transition = selectionOrTransition.duration !== undefined ? selectionOrTransition : null;
@@ -145,7 +142,7 @@ export function render(selectionOrTransition, data, options) {
 		var element = select(this);
 
 		// Retrieve template for element
-		var templateSelector = element.attr(options.elementSelectorAttribute);
+		var templateSelector = element.attr(ELEMENT_SELECTOR_ATTRIBUTE);
 		if(!templateSelector) {
 			throw new Error("Method render() called on non-template selection.");
 		}
@@ -173,7 +170,7 @@ Template.joinData = function(data, element) {
 	element.datum(data);
 
 	// Set data on all descendants (within root scope, remainder will be set by renderers)
-	if(!element.classed(SCOPE_BOUNDARY)) {
+	if(!element.classed(SCOPE_BOUNDARY_CLASS)) {
 		element.selectAll(function() { return this.children; }).each(function() {
 			Template.joinData(data, select(this));
 		});
@@ -272,7 +269,7 @@ Template.prototype.addTemplateElements = function(element, owner) {
 		element.attr(group.attr, null);
 
 		// Mark element as scope boundary
-		element.classed(SCOPE_BOUNDARY, true);
+		element.classed(SCOPE_BOUNDARY_CLASS, true);
 
 		// Add renderers for the group element's child (the group renderer is the owner)
 		if(childElement.size() === 1) {
@@ -291,7 +288,7 @@ Template.prototype.copyEventHandlers = function(element, groupRenderer) {
 	// Add event handlers from element (root node)
 	var eventHandlers = element.node()[EVENT_HANDLERS];
 	if(eventHandlers && eventHandlers.length > 0) {
-		var selector = this.generateUniqueSelector(element);
+		var selector = Template.generateUniqueSelector(element);
 		groupRenderer.addEventHandlers(selector, eventHandlers);
 	}
 
@@ -425,11 +422,11 @@ Template.prototype.createTemplatePath = function(element, fieldSelectorAndFilter
 		throw new SyntaxError("Failed to parse field selector and/or filter <" + fieldSelectorAndFilters + "> @ " + parseResult.index + ": EXTRA_CHARACTERS");
 	}
 
-	return new TemplatePath(this.generateUniqueSelector(element), this.createDataFunction(parseResult.value));
+	return new TemplatePath(Template.generateUniqueSelector(element), Template.createDataFunction(parseResult.value));
 };
 
 // Answer a d3 data function for specified field selector
-Template.prototype.createDataFunction = function(parseFieldResult) {
+Template.createDataFunction = function(parseFieldResult) {
 	var fieldSelectors = parseFieldResult.fieldSelectors;
 	var filterReferences = parseFieldResult.filterReferences;
 
@@ -475,22 +472,21 @@ Template.prototype.createDataFunction = function(parseFieldResult) {
 
 // Generate a unique selector within group scope (this selector might be copied into siblings for repeating groups, so uniqueness is not absolute)
 var selectorIdCounter = 0;
-Template.prototype.generateUniqueSelector = function(element) {
+Template.generateUniqueSelector = function(element) {
 
 	// Check for presence of selector id
-	var elementSelectorAttribute = this.options.elementSelectorAttribute;
-	var selectorId = element.attr(elementSelectorAttribute);
+	var selectorId = element.attr(ELEMENT_SELECTOR_ATTRIBUTE);
 
 	if(!selectorId) {
 
 		// Add new id and set template class
 		selectorId = "_" + selectorIdCounter.toString(36) + "_";
 		selectorIdCounter++;
-		element.attr(elementSelectorAttribute, selectorId);
+		element.attr(ELEMENT_SELECTOR_ATTRIBUTE, selectorId);
 	}
 
 	// Answer the selector
-	return "[" + elementSelectorAttribute + "=\"" + selectorId + "\"]";
+	return "[" + ELEMENT_SELECTOR_ATTRIBUTE + "=\"" + selectorId + "\"]";
 };
 
 // Add renderers

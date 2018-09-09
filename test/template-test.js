@@ -16,8 +16,8 @@ tape("template() identifies root element containing template-field", function(te
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template();
-	test.assert(selection.attr("data-template").match(/^_[0-9a-zA-Z]+_$/), "Root element gets template-id '_<alphanumeric>_'");
-	test.assert(selection.attr("data-template"), "Root element gets marked as template");
+	test.assert(selection.attr("data-d3t7s").match(/^_[0-9a-zA-Z]+_$/), "Root element gets template-id '_<alphanumeric>_'");
+	test.assert(selection.attr("data-d3t7s"), "Root element gets marked as template");
 	test.end();
 });
 
@@ -27,8 +27,8 @@ tape("template() only identifies root and elements containing template-field", f
 	var node = document.querySelector("body");
 	var selection = d3.select(node);
 	d3.template(selection);
-	test.assert(selection.attr("data-template"), "Root element marked as template");
-	test.equal(selection.selectAll("[data-template]").size(), 0, "No child elements marked as template");
+	test.assert(selection.attr("data-d3t7s"), "Root element marked as template");
+	test.equal(selection.selectAll("[data-d3t7s]").size(), 0, "No child elements marked as template");
 	test.end();
 });
 
@@ -37,9 +37,9 @@ tape("template() identifies child element containing template-field in attribute
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template();
-	test.assert(selection.select("span").attr("data-template").match(/^_[0-9a-zA-Z]+_$/), "Child element gets template-id '_<alphanumeric>_'");
-	test.assert(selection.select("span").attr("data-template"), "Child element gets marked as template");
-	test.equal(selection.selectAll("[data-template]").size(), 1, "Only 1 child identified");
+	test.assert(selection.select("span").attr("data-d3t7s").match(/^_[0-9a-zA-Z]+_$/), "Child element gets template-id '_<alphanumeric>_'");
+	test.assert(selection.select("span").attr("data-d3t7s"), "Child element gets marked as template");
+	test.equal(selection.selectAll("[data-d3t7s]").size(), 1, "Only 1 child identified");
 	test.end();
 });
 
@@ -48,9 +48,9 @@ tape("template() identifies child element containing template-field in text", fu
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template();
-	test.assert(selection.select("b").attr("data-template").match(/^_[0-9a-zA-Z]+_$/), "Parent element of text node gets template-id '_<alphanumeric>_'");
-	test.assert(selection.select("b").attr("data-template"), "Parent element of text node gets marked as template");
-	test.equal(selection.selectAll("[data-template]").size(), 1, "Only 1 child identified");
+	test.assert(selection.select("b").attr("data-d3t7s").match(/^_[0-9a-zA-Z]+_$/), "Parent element of text node gets template-id '_<alphanumeric>_'");
+	test.assert(selection.select("b").attr("data-d3t7s"), "Parent element of text node gets marked as template");
+	test.equal(selection.selectAll("[data-d3t7s]").size(), 1, "Only 1 child identified");
 	test.end();
 });
 
@@ -59,27 +59,29 @@ tape("template({ ... }) identifies elements with default class (if no custom val
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template({ some: "template-marker", orOther: "value" });
-	test.assert(selection.attr("data-template"), "Default marker applied on root element");
-	test.equal(selection.selectAll("[data-template]").size(), 1, "Default marker applied on child element");
+	test.assert(selection.attr("data-d3t7s"), "Default marker applied on root element");
+	test.equal(selection.selectAll("[data-d3t7s]").size(), 1, "Default marker applied on child element");
 	test.end();
 });
 
+/* Currently a fixed selector is in use.
 tape("template({ elementSelectorAttribute: 'xyz', ... }) identifies elements with custom selector attribute name", function(test) {
 	var document = jsdom("<div><span><b>{{field}}</b></span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template({ elementSelectorAttribute: "template-selector" });
 	test.assert(selection.select("b").attr("template-selector") !== null, "Custom selector applied on identified element");
-	test.assert(selection.select("b").attr("data-template") === null, "Default selector not applied on identified element");
+	test.assert(selection.select("b").attr("data-d3t7s") === null, "Default selector not applied on identified element");
 	test.end();
 });
+*/
 
 tape("template({ repeatAttribute: 'xyz', ... }) identifies elements with custom repeat attribute name", function(test) {
 	var document = jsdom("<div><ul for='{{field}}'><li>{{.}}</li></ul></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template({ repeatAttribute: "for" });
-	test.assert(selection.select("ul").attr("data-template"), "Group marked as template element");
+	test.assert(selection.select("ul").attr("data-d3t7s"), "Group marked as template element");
 	test.assert(selection.select("ul").attr("for") === null, "Custom group selector no longer present on identified element");
 	test.equals(selection.select("ul").selectAll("li").size(), 0, "Child element of group removed");
 	test.end();
@@ -90,7 +92,7 @@ tape("template({ ifAttribute: 'xyz', ... }) identifies elements with custom if a
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template({ ifAttribute: "if" });
-	test.assert(selection.select("span").attr("data-template"), "Group marked as template element");
+	test.assert(selection.select("span").attr("data-d3t7s"), "Group marked as template element");
 	test.assert(selection.select("span").attr("if") === null, "Custom group selector no longer present on identified element");
 	test.equals(selection.select("span").text(), "", "Child element of group removed");
 	test.end();
@@ -101,7 +103,7 @@ tape("template({ withAttribute: 'xyz', ... }) identifies elements with custom wi
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template({ withAttribute: "with" });
-	test.assert(selection.select("span").attr("data-template"), "Group marked as template element");
+	test.assert(selection.select("span").attr("data-d3t7s"), "Group marked as template element");
 	test.assert(selection.select("span").attr("with") === null, "Custom group selector no longer present on identified element");
 	test.equals(selection.select("span").text(), "", "Child element of group removed");
 	test.end();
