@@ -110,18 +110,13 @@ TemplateNode.prototype.addEventHandlers = function(selector, eventHandlers) {
 };
 
 // Add child (template) elements to the receiver
-TemplateNode.prototype.addChildElement = function(childElement) {
-	this.childNodes.push(childElement);
+TemplateNode.prototype.addChildNode = function(childNode) {
+	this.childNodes.push(childNode);
 };
 
 // Add renderers for child elements to the receiver
 TemplateNode.prototype.addRenderer = function(renderer) {
 	this.renderers.push(renderer);
-};
-
-// Answer whether receiver is TemplateNode
-TemplateNode.prototype.isTemplateNode = function() {
-	return true;
 };
 
 // RepeatNode - Renders data to a repeating group of elements

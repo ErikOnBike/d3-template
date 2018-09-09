@@ -266,7 +266,7 @@ Template.prototype.addTemplateElements = function(element, owner) {
 			this.createTemplatePath(element, group.match[1]),
 			childElement
 		);
-		owner.addChildElement(groupRenderer);
+		owner.addChildNode(groupRenderer);
 
 		// Remove group attribute
 		element.attr(group.attr, null);
@@ -495,4 +495,4 @@ Template.prototype.generateUniqueSelector = function(element) {
 
 // Add renderers
 Template.prototype.addRenderer = TemplateNode.prototype.addRenderer;
-Template.prototype.addChildElement = TemplateNode.prototype.addChildElement;
+Template.prototype.addChildNode = TemplateNode.prototype.addChildNode;
