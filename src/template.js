@@ -1,6 +1,6 @@
 import { select } from "d3-selection";
 import { TemplatePath } from "./template-path";
-import { TemplateNode,RepeatNode, IfNode, WithNode } from "./template-node";
+import { RootNode, RepeatNode, IfNode, WithNode } from "./template-node";
 import { FieldParser } from "./field-parser";
 import { namedRenderFilters, AttributeRenderer, StyleRenderer, PropertyRenderer, TextRenderer } from "./renderer";
 
@@ -109,19 +109,19 @@ export function template(selection, options) {
 
 	// Create templates from the current selection
 	selection.each(function() {
-		var element = select(this);
+		var rootElement = select(this);
+
+		// Create a template root node for the element
+		var rootNode = new RootNode(Template.createTemplatePath(rootElement, "."));
 
 		// Create template using specified identification mechanism
-		var template = new Template(options);
-
-		// Generate unique selector so template can be referenced
-		Template.generateUniqueSelector(element);
+		var template = new Template(rootNode, options);
 
 		// Add renderers so template can be rendered when data is provided
-		template.addRenderers(element, template);
+		template.addRenderers(rootElement, rootNode);
 
 		// Store template 
-		var templateSelector = element.attr(ELEMENT_SELECTOR_ATTRIBUTE);
+		var templateSelector = rootElement.attr(ELEMENT_SELECTOR_ATTRIBUTE);
 		templates[templateSelector] = template;
 	});
 
@@ -148,56 +148,38 @@ export function render(selectionOrTransition, data) {
 		}
 		var template = templates[templateSelector];
 
-		// Render data on template
-		template.render(data, element, transition);
+		// Join data and render on root (will render data on children as well)
+		element.datum(data);
+		template.rootNode.joinData(element);
+		template.rootNode.render(element, transition);
 	});
 
 	return selectionOrTransition;
 }
 
 // Template class
-export function Template(options) {
+export function Template(rootNode, options) {
+	this.rootNode = rootNode;
 	this.options = options;
-	this.childNodes = [];
-	this.renderers = [];
 }
 
 // Class methods
-// Join data on template element(s)
-Template.joinData = function(data, element) {
+// Answer a new TemplatePath instance for the supplied selector and filter
+var fieldParser = new FieldParser();
+Template.createTemplatePath = function(element, fieldSelectorAndFilters) {
 
-	// Set data on element
-	element.datum(data);
-
-	// Set data on all descendants (within root scope, remainder will be set by renderers)
-	if(!element.classed(SCOPE_BOUNDARY_CLASS)) {
-		element.selectAll(function() { return this.children; }).each(function() {
-			Template.joinData(data, select(this));
-		});
+	// Parse field selector and (optional) filters
+	var parseResult = fieldParser.parse(fieldSelectorAndFilters);
+	if(parseResult.value === undefined) {
+		throw new SyntaxError("Failed to parse field selector and/or filter <" + fieldSelectorAndFilters + "> @ " + parseResult.index + ": " + parseResult.errorCode);
+	} else if(parseResult.index !== fieldSelectorAndFilters.length) {
+		throw new SyntaxError("Failed to parse field selector and/or filter <" + fieldSelectorAndFilters + "> @ " + parseResult.index + ": EXTRA_CHARACTERS");
 	}
+
+	return new TemplatePath(Template.generateUniqueSelector(element), Template.createDataFunction(parseResult.value));
 };
 
 // Instance methods
-// Render data on specified template element
-Template.prototype.render = function(data, element, transition) {
-
-	// Join data
-	Template.joinData(data, element);
-
-	// Join data on child elements (creating DOM in the process)
-	this.childNodes.forEach(function(childNode) {
-		childNode.joinData(element);
-	});
-
-	// Render data on element
-	this.renderers.forEach(function(renderer) {
-		renderer.render(element, transition);
-	});
-	this.childNodes.forEach(function(childElement) {
-		childElement.render(element, transition);
-	});
-};
-
 // Add renderers for the specified element to specified owner
 Template.prototype.addRenderers = function(element, owner) {
 
@@ -260,7 +242,7 @@ Template.prototype.addTemplateElements = function(element, owner) {
 		// Add group renderer
 		var group = groups[0];
 		var groupRenderer = new group.renderClass(
-			this.createTemplatePath(element, group.match[1]),
+			Template.createTemplatePath(element, group.match[1]),
 			childElement
 		);
 		owner.addChildNode(groupRenderer);
@@ -328,7 +310,6 @@ Template.prototype.addAttributeRenderers = function(element, owner) {
 	}
 	
 	// Handle attributes (and styles)
-	var self = this;
 	attributes.forEach(function(attribute) {
 
 		// Check if field selector is present
@@ -372,7 +353,7 @@ Template.prototype.addAttributeRenderers = function(element, owner) {
 
 			// Add renderer
 			owner.addRenderer(new renderClass(
-				self.createTemplatePath(element, match[1]),
+				Template.createTemplatePath(element, match[1]),
 				renderAttributeName
 			));
 
@@ -401,28 +382,13 @@ Template.prototype.addTextRenderers = function(element, owner) {
 
 			// Add renderer
 			owner.addRenderer(new TextRenderer(
-				this.createTemplatePath(element, match[1])
+				Template.createTemplatePath(element, match[1])
 			));
 
 			// Remove field selector from text node
 			element.text(null);
 		}
 	}
-};
-
-// Answer a new TemplatePath instance for the supplied selector and filter
-var fieldParser = new FieldParser();
-Template.prototype.createTemplatePath = function(element, fieldSelectorAndFilters) {
-
-	// Parse field selector and (optional) filters
-	var parseResult = fieldParser.parse(fieldSelectorAndFilters);
-	if(parseResult.value === undefined) {
-		throw new SyntaxError("Failed to parse field selector and/or filter <" + fieldSelectorAndFilters + "> @ " + parseResult.index + ": " + parseResult.errorCode);
-	} else if(parseResult.index !== fieldSelectorAndFilters.length) {
-		throw new SyntaxError("Failed to parse field selector and/or filter <" + fieldSelectorAndFilters + "> @ " + parseResult.index + ": EXTRA_CHARACTERS");
-	}
-
-	return new TemplatePath(Template.generateUniqueSelector(element), Template.createDataFunction(parseResult.value));
 };
 
 // Answer a d3 data function for specified field selector
@@ -488,7 +454,3 @@ Template.generateUniqueSelector = function(element) {
 	// Answer the selector
 	return "[" + ELEMENT_SELECTOR_ATTRIBUTE + "=\"" + selectorId + "\"]";
 };
-
-// Add renderers
-Template.prototype.addRenderer = TemplateNode.prototype.addRenderer;
-Template.prototype.addChildNode = TemplateNode.prototype.addChildNode;

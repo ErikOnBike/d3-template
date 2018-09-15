@@ -13,7 +13,7 @@ TemplatePath.prototype.getElementIn = function(rootElement) {
 	// The resulting element is either the root element itself or child(ren) of the root element
 	var selection = rootElement.filter(matcher(this.selector));
 	if(selection.size() === 0) {
-		selection = rootElement.select(this.selector);
+		selection = rootElement.selectAll(this.selector);
 	}
 	return selection;
 };

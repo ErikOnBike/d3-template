@@ -17,8 +17,8 @@ export function TemplateNode(templatePath) {
 TemplateNode.copyDataToChildren = function(data, element) {
 	element.selectAll(function() { return this.children; }).each(function() {
 		var childElement = select(this);
+		childElement.datum(data);
 		if(!childElement.classed(SCOPE_BOUNDARY)) {
-			childElement.datum(data);
 			TemplateNode.copyDataToChildren(data, childElement);
 		}
 	});
@@ -42,13 +42,19 @@ TemplateNode.prototype.getDataFunction = function() {
 
 TemplateNode.prototype.render = function(templateElement, transition) {
 
-	// Render children
-	var childElements = this.getElementIn(templateElement).selectAll(function() { return this.children; });
+	// Render attributes
+	var element = this.getElementIn(templateElement);
 	this.renderers.forEach(function(childRenderer) {
-		childRenderer.render(childElements, transition);
+		childRenderer.render(element, transition);
 	});
+
+	// Render nodes
+	this.renderNodes(element, transition);
+};
+
+TemplateNode.prototype.renderNodes = function(element, transition) {
 	this.childNodes.forEach(function(childNode) {
-		childNode.render(childElements, transition);
+		childNode.render(element, transition);
 	});
 };
 
@@ -60,6 +66,27 @@ TemplateNode.prototype.addChildNode = function(childNode) {
 // Add renderers for child elements to the receiver
 TemplateNode.prototype.addRenderer = function(renderer) {
 	this.renderers.push(renderer);
+};
+
+// RootNode class
+export function RootNode(templatePath) {
+	TemplateNode.call(this, templatePath);
+}
+RootNode.prototype = Object.create(TemplateNode.prototype);
+RootNode.prototype.constructor = RootNode;
+
+// Instance methods
+// Join data onto the receiver (using rootElement as base for selecting the DOM elements)
+// The root element already has a datum bound (it will be used in copyDataToChildren)
+RootNode.prototype.joinData = function(rootElement) {
+
+	// Get data from element and copy to children
+	TemplateNode.copyDataToChildren(rootElement.datum(), rootElement);
+
+	// Join data for the child nodes
+	this.childNodes.forEach(function(childNode) {
+		childNode.joinData(rootElement);
+	});
 };
 
 // GroupingNode class
@@ -134,9 +161,17 @@ GroupingNode.prototype.joinData = function(templateElement) {
 		TemplateNode.copyDataToChildren(data, childElement);
 	});
 
-	// Create child elements
+	// Create additional child elements on newly created childs
 	this.childNodes.forEach(function(childNode) {
 		childNode.joinData(childElements);
+	});
+};
+
+// @@
+GroupingNode.prototype.renderNodes = function(element, transition) {
+	var childElements = element.selectAll(function() { return this.children; });
+	this.childNodes.forEach(function(childNode) {
+		childNode.render(childElements, transition);
 	});
 };
 
