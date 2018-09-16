@@ -1,6 +1,6 @@
 import { select } from "d3-selection";
 import { TemplatePath } from "./template-path";
-import { RootNode, RepeatNode, IfNode, WithNode } from "./template-node";
+import { TemplateNode, RepeatNode, IfNode, WithNode } from "./template-node";
 import { FieldParser } from "./field-parser";
 import { namedRenderFilters, AttributeRenderer, StyleRenderer, PropertyRenderer, TextRenderer } from "./renderer";
 
@@ -112,7 +112,7 @@ export function template(selection, options) {
 		var rootElement = select(this);
 
 		// Create a template root node for the element
-		var rootNode = new RootNode(Template.createTemplatePath(rootElement, "."));
+		var rootNode = new TemplateNode(Template.createTemplatePath(rootElement, "."));
 
 		// Create template using specified identification mechanism
 		var template = new Template(rootNode, options);
@@ -150,8 +150,10 @@ export function render(selectionOrTransition, data) {
 
 		// Join data and render on root (will render data on children as well)
 		element.datum(data);
-		template.rootNode.joinData(element);
-		template.rootNode.render(element, transition);
+		template.rootNode
+			.joinData(element)
+			.render(element, transition)
+		;
 	});
 
 	return selectionOrTransition;
