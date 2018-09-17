@@ -1,7 +1,9 @@
 import { select, matcher } from "d3-selection";
 
 // Constants
-var NODE_BOUNDARY = "d3t7s";
+var ELEMENT_SELECTOR_ATTRIBUTE = "data-d3t7s";
+var NODE_BOUNDARY_CLASS = "d3t7s";
+var EVENT_HANDLERS = "__on";
 
 // ---- TemplateNode class ----
 // I am a node in a template and I join and render data onto templates.
@@ -14,37 +16,63 @@ var NODE_BOUNDARY = "d3t7s";
 export function TemplateNode(templatePath) {
 
 	// Set instance variables
-	this.templatePath = templatePath;
+	this.selector = TemplateNode.generateUniqueSelector(templatePath.element); // @@
+	this.dataFunction = templatePath.dataFunction;
 	this.childNodes = [];
 	this.renderers = [];
 }
 
 // ---- TemplateNode class methods ----
+// Generate a unique selector for specified element (this selector might be copied into siblings for repeat groupings, so uniqueness is not absolute)
+var selectorIdCounter = 0;
+TemplateNode.generateUniqueSelector = function(element) {
+
+	// Check for presence of selector id
+	var selectorId = element.attr(ELEMENT_SELECTOR_ATTRIBUTE);
+
+	if(!selectorId) {
+
+		// Add new id and set template class
+		selectorId = "_" + selectorIdCounter.toString(36) + "_";
+		selectorIdCounter++;
+		element.attr(ELEMENT_SELECTOR_ATTRIBUTE, selectorId);
+	}
+
+	// Answer the selector
+	return "[" + ELEMENT_SELECTOR_ATTRIBUTE + "=\"" + selectorId + "\"]";
+};
+
+// Answer the template selector for the specified element
+TemplateNode.templateSelector = function(element) {
+	return element.attr(ELEMENT_SELECTOR_ATTRIBUTE);
+};
+
 // Copy specified data onto all children of the template node (recursively)
 TemplateNode.copyDataToChildren = function(data, element) {
 	element.selectAll(function() { return this.children; }).each(function() {
 		var childElement = select(this);
 		childElement.datum(data);
-		if(!childElement.classed(NODE_BOUNDARY)) {
+		if(!childElement.classed(NODE_BOUNDARY_CLASS)) {
 			TemplateNode.copyDataToChildren(data, childElement);
 		}
 	});
 };
 
 // ---- TemplateNode instance methods ----
-// Answer the templatePath of the receiver
-TemplateNode.prototype.getTemplatePath = function() {
-	return this.templatePath;
-};
-
-// Answer the element referred to by the receivers templatePath
+// Answer the element referred to by the receivers selector
 TemplateNode.prototype.getElementIn = function(rootElement) {
-	return this.getTemplatePath().getElementIn(rootElement);
+
+	// The resulting element is either the root element itself or child(ren) of the root element
+	var selection = rootElement.filter(matcher(this.selector));
+	if(selection.size() === 0) {
+		selection = rootElement.selectAll(this.selector);
+	}
+	return selection;
 };
 
 // Answer the data function
 TemplateNode.prototype.getDataFunction = function() {
-	return this.getTemplatePath().getDataFunction();
+	return this.dataFunction;
 };
 
 // Add child template node to the receiver
@@ -99,7 +127,7 @@ TemplateNode.prototype.renderNodes = function(element, transition) {
 
 // ---- GroupingNode class ----
 // I am a TemplateNode and I create DOM trees based on my (or my
-// subclasses) specific purpose. I work like a conditional or control
+// subclasses') specific purpose. I work like a conditional or control
 // flow element. I also know about event handlers on the template.
 // When I join data onto the template (and thereby create DOM
 // trees) I also apply these event handlers from the template onto
@@ -113,12 +141,6 @@ GroupingNode.prototype = Object.create(TemplateNode.prototype);
 GroupingNode.prototype.constructor = GroupingNode;
 
 // ---- GroupingNode instance methods ----
-// Add event handlers for specified (sub)element (specified by a selector) to the receiver
-GroupingNode.prototype.addEventHandlers = function(selector, eventHandlers) {
-	var entry = this.eventHandlersMap[selector];
-	this.eventHandlersMap[selector] = entry ? entry.concat(eventHandlers) : eventHandlers;
-};
-
 // Join data onto the receiver (using rootElement as base for selecting the DOM elements)
 GroupingNode.prototype.joinData = function(rootElement) {
 
@@ -165,6 +187,25 @@ GroupingNode.prototype.joinData = function(rootElement) {
 	return this;
 };
 
+// Add event handlers for specified element to the receiver
+GroupingNode.prototype.addEventHandlers = function(element) {
+
+	// Add event handlers for element
+	var eventHandlers = element.node()[EVENT_HANDLERS];
+	if(eventHandlers && eventHandlers.length > 0) {
+		var selector = TemplateNode.generateUniqueSelector(element);
+		var entry = this.eventHandlersMap[selector];
+		this.eventHandlersMap[selector] = entry ? entry.concat(eventHandlers) : eventHandlers;
+	}
+
+	// Add event handlers for direct children (recursively)
+	var self = this;
+	element.selectAll(function() { return this.children; }).each(function() {
+		var childElement = select(this);
+		self.addEventHandlers(childElement);
+	});
+};
+
 // Apply event handlers onto specified elements (which where created by joining data)
 GroupingNode.prototype.applyEventHandlers = function(elements) {
 	var eventHandlersMap = this.eventHandlersMap;
@@ -206,7 +247,8 @@ RepeatNode.prototype.constructor = RepeatNode;
 
 // ---- IfNode class ----
 // I am a GroupingNode and I create DOM trees based on a conditional
-// value (meaning any 'thruthy' value, see https://developer.mozilla.org/en-US/docs/Glossary/Truthy)
+// value (meaning any 'thruthy' value)
+// see https://developer.mozilla.org/en-US/docs/Glossary/Truth)
 export function IfNode(templatePath, childElement) {
 	GroupingNode.call(this, templatePath, childElement);
 }

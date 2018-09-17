@@ -17,9 +17,7 @@ var FIELD_SELECTOR_REG_EX = /^\s*\{\{\s*(.*)\s*\}\}\s*$/u;
 var ATTRIBUTE_REFERENCE_REG_EX = /^data-attr-(.*)$/u;
 var STYLE_REFERENCE_REG_EX = /^data-style-(.*)$/u;
 var PROPERTY_REFERENCE_REG_EX = /^data-prop-(.*)$/u;
-var ELEMENT_SELECTOR_ATTRIBUTE = "data-d3t7s";
-var SCOPE_BOUNDARY_CLASS = "d3t7s";
-var EVENT_HANDLERS = "__on";
+var NODE_BOUNDARY_CLASS = "d3t7s";
 var SVG_CAMEL_CASE_ATTRS = {};	// Combined SVG 1.1 and SVG 2 (draft 14 feb 2018)
 [
 	"attributeName",
@@ -118,10 +116,10 @@ export function template(selection, options) {
 		var template = new Template(rootNode, options);
 
 		// Add renderers so template can be rendered when data is provided
-		template.addRenderers(rootElement, rootNode);
+		template.addNodesAndRenderers(rootElement, rootNode);
 
 		// Store template 
-		var templateSelector = rootElement.attr(ELEMENT_SELECTOR_ATTRIBUTE);
+		var templateSelector = TemplateNode.templateSelector(rootElement);
 		templates[templateSelector] = template;
 	});
 
@@ -142,15 +140,15 @@ export function render(selectionOrTransition, data) {
 		var element = select(this);
 
 		// Retrieve template for element
-		var templateSelector = element.attr(ELEMENT_SELECTOR_ATTRIBUTE);
+		var templateSelector = TemplateNode.templateSelector(element);
 		if(!templateSelector) {
 			throw new Error("Method render() called on non-template selection.");
 		}
 		var template = templates[templateSelector];
 
-		// Join data and render on root (will render data on children as well)
+		// Join data and render template
 		element.datum(data);
-		template.rootNode
+		template
 			.joinData(element)
 			.render(element, transition)
 		;
@@ -178,52 +176,66 @@ Template.createTemplatePath = function(element, fieldSelectorAndFilters) {
 		throw new SyntaxError("Failed to parse field selector and/or filter <" + fieldSelectorAndFilters + "> @ " + parseResult.index + ": EXTRA_CHARACTERS");
 	}
 
-	return new TemplatePath(Template.generateUniqueSelector(element), Template.createDataFunction(parseResult.value));
+	return new TemplatePath(element, Template.createDataFunction(parseResult.value));
 };
 
 // Instance methods
-// Add renderers for the specified element to specified owner
-Template.prototype.addRenderers = function(element, owner) {
+// Join data onto template
+Template.prototype.joinData = function(rootElement) {
+	this.rootNode.joinData(rootElement);
 
-	// Add renderers for groups, attributes and text (order is important!)
-	this.addTemplateElements(element, owner);
-	this.addAttributeRenderers(element, owner);
-	this.addTextRenderers(element, owner);
+	return this;
+};
+
+// Render data onto template
+Template.prototype.render = function(rootElement, transition) {
+	this.rootNode.render(rootElement, transition);
+
+	return this;
+};
+
+// Add renderers for the specified element to specified parent node
+Template.prototype.addNodesAndRenderers = function(element, parentNode) {
+
+	// Add template nodes for groupings and renderers for attributes and text (order is important!)
+	this.addGroupingNodes(element, parentNode);
+	this.addAttributeRenderers(element, parentNode);
+	this.addTextRenderers(element, parentNode);
 
 	// Process all direct children recursively
 	var self = this;
 	element.selectAll(function() { return this.children; }).each(function() {
 		var childElement = select(this);
-		self.addRenderers(childElement, owner);
+		self.addNodesAndRenderers(childElement, parentNode);
 	});
 };
 
-// Add group renderers (like repeat, if, with) for the specified element to specified owner
-Template.prototype.addTemplateElements = function(element, owner) {
+// Add grouping nodes (like repeat, if, with) for the specified element to specified parent node
+Template.prototype.addGroupingNodes = function(element, parentNode) {
 
-	// Handle groups
-	var groups = [
-		{ attr: this.options.repeatAttribute, renderClass: RepeatNode, match: false },
-		{ attr: this.options.ifAttribute, renderClass: IfNode, match: false },
-		{ attr: this.options.withAttribute, renderClass: WithNode, match: false }
+	// Handle grouping nodes
+	var groupings = [
+		{ attr: this.options.repeatAttribute, nodeClass: RepeatNode, match: false },
+		{ attr: this.options.ifAttribute, nodeClass: IfNode, match: false },
+		{ attr: this.options.withAttribute, nodeClass: WithNode, match: false }
 	];
 
-	// Collect group info from element
-	groups.forEach(function(group) {
-		var field = element.attr(group.attr);
+	// Collect grouping node info from element
+	groupings.forEach(function(grouping) {
+		var field = element.attr(grouping.attr);
 		if(field) {
-			group.match = field.match(FIELD_SELECTOR_REG_EX);
+			grouping.match = field.match(FIELD_SELECTOR_REG_EX);
 		}
 	});
 
 	// Validate there is 0 or 1 match
-	groups = groups.filter(function(group) { return group.match; });
-	if(groups.length > 1) {
+	groupings = groupings.filter(function(grouping) { return grouping.match; });
+	if(groupings.length > 1) {
 		throw new Error("A repeat, if or with grouping can't be combined on same element. Wrap one in the other.");
 	}
 
-	// Handle group
-	if(groups.length === 1) {
+	// Handle grouping
+	if(groupings.length === 1) {
 
 		// Select and extract first child as the grouping element
 		var childElement = element
@@ -233,73 +245,57 @@ Template.prototype.addTemplateElements = function(element, owner) {
 
 		// Text should be wrapped inside element
 		if(childElement.size() === 0 && element.text().trim().length !== 0) {
-			throw new Error("A child element should be present within repeat, if or with group. Wrap text in a DOM element.");
+			throw new Error("A child element should be present within repeat, if or with grouping. Wrap text in a DOM element.");
 		}
 
 		// Additional children are not allowed
 		if(element.node().children.length > 0) {
-			throw new Error("Only a single child element allowed within repeat, if or with group. Wrap child elements in a container element.");
+			throw new Error("Only a single child element allowed within repeat, if or with grouping. Wrap child elements in a container element.");
 		}
 
-		// Add group renderer
-		var group = groups[0];
-		var groupRenderer = new group.renderClass(
-			Template.createTemplatePath(element, group.match[1]),
+		// Add grouping nodes
+		var grouping = groupings[0];
+		var groupingNode = new grouping.nodeClass(
+			Template.createTemplatePath(element, grouping.match[1]),
 			childElement
 		);
-		owner.addChildNode(groupRenderer);
+		parentNode.addChildNode(groupingNode);
 
-		// Remove group attribute
-		element.attr(group.attr, null);
+		// Remove grouping attribute
+		element.attr(grouping.attr, null);
 
-		// Mark element as scope boundary
-		element.classed(SCOPE_BOUNDARY_CLASS, true);
+		// Mark element as template node boundary
+		element.classed(NODE_BOUNDARY_CLASS, true);
 
-		// Add renderers for the group element's child (the group renderer is the owner)
+		// Add template nodes and renderers for the grouping element's child
 		if(childElement.size() === 1) {
-			this.addRenderers(childElement, groupRenderer);
+			this.addNodesAndRenderers(childElement, groupingNode);
 
-			// Add event handlers to the group renderer
-			// (At this point any (sub)groups of childElement are removed, so childElement is 'clean')
-			this.copyEventHandlers(childElement, groupRenderer);
+			// Add event handlers to the grouping node
+			// At this point any (sub)groupings of childElement are removed,
+			// so childElement is 'clean'.
+			groupingNode.addEventHandlers(childElement);
 		}
 	}
 };
 
-// Copy all event handlers of element (and its children) to the groupRenderer
-Template.prototype.copyEventHandlers = function(element, groupRenderer) {
+// Add attribute renderers (include attributes referring to style properties) for the specified element to specified parent node
+Template.prototype.addAttributeRenderers = function(element, parentNode) {
 
-	// Add event handlers from element (root node)
-	var eventHandlers = element.node()[EVENT_HANDLERS];
-	if(eventHandlers && eventHandlers.length > 0) {
-		var selector = Template.generateUniqueSelector(element);
-		groupRenderer.addEventHandlers(selector, eventHandlers);
-	}
-
-	// Add event handlers for direct children (recursively)
-	var self = this;
-	element.selectAll(function() { return this.children; }).each(function() {
-		var childElement = select(this);
-		self.copyEventHandlers(childElement, groupRenderer);
-	});
-};
-
-// Add attribute renderers (include attributes referring to style properties) for the specified element to specified owner
-Template.prototype.addAttributeRenderers = function(element, owner) {
-
-	// Create a fixed (ie non live) list of attributes since attributes will be removed during processing
+	// Create a fixed (ie non live) list of attributes (since attributes will be removed during processing)
 	var attributes = [];
 	if(element.node().hasAttributes()) {
 		var attributeMap = element.node().attributes;
 		for(var i = 0; i < attributeMap.length; i++) {
 			var name = attributeMap[i].name;
 			var localName;
-			var prefix = undefined;
+			var prefix;
 			var separatorIndex = name.indexOf(":");
 			if(separatorIndex >= 0) {
 				prefix = name.slice(0, separatorIndex);
 				localName = name.slice(separatorIndex + 1);
 			} else {
+				prefix = undefined;
 				localName = name;
 			}
 			attributes.push({
@@ -354,7 +350,7 @@ Template.prototype.addAttributeRenderers = function(element, owner) {
 			}
 
 			// Add renderer
-			owner.addRenderer(new renderClass(
+			parentNode.addRenderer(new renderClass(
 				Template.createTemplatePath(element, match[1]),
 				renderAttributeName
 			));
@@ -371,8 +367,8 @@ Template.prototype.addAttributeRenderers = function(element, owner) {
 	});
 };
 
-// Add text renderers for the specified element to specified owner
-Template.prototype.addTextRenderers = function(element, owner) {
+// Add text renderers for the specified element to specified parent node
+Template.prototype.addTextRenderers = function(element, parentNode) {
 
 	// Handle text nodes (no other children allowed on these elements)
 	if(element.node().children.length === 0) {
@@ -383,7 +379,7 @@ Template.prototype.addTextRenderers = function(element, owner) {
 		if(match) {
 
 			// Add renderer
-			owner.addRenderer(new TextRenderer(
+			parentNode.addRenderer(new TextRenderer(
 				Template.createTemplatePath(element, match[1])
 			));
 
@@ -436,23 +432,4 @@ Template.createDataFunction = function(parseFieldResult) {
 	dataFunction.isTweenFunction = isTweenFunction;
 
 	return dataFunction;
-};
-
-// Generate a unique selector within group scope (this selector might be copied into siblings for repeating groups, so uniqueness is not absolute)
-var selectorIdCounter = 0;
-Template.generateUniqueSelector = function(element) {
-
-	// Check for presence of selector id
-	var selectorId = element.attr(ELEMENT_SELECTOR_ATTRIBUTE);
-
-	if(!selectorId) {
-
-		// Add new id and set template class
-		selectorId = "_" + selectorIdCounter.toString(36) + "_";
-		selectorIdCounter++;
-		element.attr(ELEMENT_SELECTOR_ATTRIBUTE, selectorId);
-	}
-
-	// Answer the selector
-	return "[" + ELEMENT_SELECTOR_ATTRIBUTE + "=\"" + selectorId + "\"]";
 };

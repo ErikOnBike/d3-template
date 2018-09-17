@@ -7,7 +7,7 @@ tape("render() group with only text", function(test) {
 	var document = jsdom("<div data-repeat='{{.}}'>{{.}}</div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
-	test.throws(function() { selection.template() }, /A child element should be present within repeat, if or with group\. Wrap text in a DOM element\./, "No child present");
+	test.throws(function() { selection.template() }, /A child element should be present within repeat, if or with grouping\. Wrap text in a DOM element\./, "No child present");
 	test.end();
 });
 
@@ -15,7 +15,7 @@ tape("render() group with multiple children", function(test) {
 	var document = jsdom("<div data-repeat='{{.}}'><span>{{.}}</span><span>{{.|upper}}</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
-	test.throws(function() { selection.template() }, /Only a single child element allowed within repeat, if or with group\. Wrap child elements in a container element\./, "No child present");
+	test.throws(function() { selection.template() }, /Only a single child element allowed within repeat, if or with grouping\. Wrap child elements in a container element\./, "No child present");
 	test.end();
 });
 

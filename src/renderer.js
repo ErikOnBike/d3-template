@@ -1,4 +1,5 @@
-import { select } from "d3-selection";
+import { select, matcher } from "d3-selection";
+import { TemplateNode } from "./template-node"; // @@
 
 // Globals
 export var namedRenderFilters = {};
@@ -30,7 +31,8 @@ function renderFilterPrivate(name, filterFunc, isTweenFilter) {
 
 // Renderer - Renders data on element
 function Renderer(templatePath) {
-	this.templatePath = templatePath;
+	this.selector = TemplateNode.generateUniqueSelector(templatePath.element); // @@
+	this.dataFunction = templatePath.dataFunction;
 }
 
 Renderer.prototype.render = function(/* templateElement */) {
@@ -38,18 +40,20 @@ Renderer.prototype.render = function(/* templateElement */) {
 };
 
 // Answer the templatePath of the receiver
-Renderer.prototype.getTemplatePath = function() {
-	return this.templatePath;
-};
-
-// Answer the element referred to by the receivers templatePath
+// Answer the element referred to by the receivers templatePath // @@ reuse (it is present on 2 more locations)
 Renderer.prototype.getElementIn = function(rootElement) {
-	return this.getTemplatePath().getElementIn(rootElement);
+
+	// The resulting element is either the root element itself or child(ren) of the root element
+	var selection = rootElement.filter(matcher(this.selector));
+	if(selection.size() === 0) {
+		selection = rootElement.selectAll(this.selector);
+	}
+	return selection;
 };
 
 // Answer the data function of the receiver
 Renderer.prototype.getDataFunction = function() {
-	return this.getTemplatePath().getDataFunction();
+	return this.dataFunction;
 };
 
 // Answer whether receiver is TemplateNode
