@@ -16,6 +16,7 @@ var FIELD_SELECTOR_REG_EX = /^\s*\{\{\s*(.*)\s*\}\}\s*$/u;
 var ATTRIBUTE_REFERENCE_REG_EX = /^data-attr-(.*)$/u;
 var STYLE_REFERENCE_REG_EX = /^data-style-(.*)$/u;
 var PROPERTY_REFERENCE_REG_EX = /^data-prop-(.*)$/u;
+var ALL_DIRECT_CHILDREN = function() { return this.children; };
 var SVG_CAMEL_CASE_ATTRS = {};	// Combined SVG 1.1 and SVG 2 (draft 14 feb 2018)
 [
 	"attributeName",
@@ -143,11 +144,13 @@ export function render(selectionOrTransition, data) {
 			throw new Error("Method render() called on non-template selection.");
 		}
 		var template = templates[templateSelector];
+		if(!template) {
+			throw new Error("Method render() called on element within template selection instead of template selection itself.");
+		}
 
 		// Join data and render template
-		element.datum(data);
 		template
-			.joinData(element)
+			.joinData(element, data)
 			.render(element, transition)
 		;
 	});
@@ -162,6 +165,35 @@ export function Template(rootNode, options) {
 }
 
 // Class methods
+// Answer a fixed (ie non live) list of attributes for the specified element
+Template.getAttributesFor = function(element) {
+	var attributes = [];
+	if(element.node().hasAttributes()) {
+		var attributeMap = element.node().attributes;
+		for(var i = 0; i < attributeMap.length; i++) {
+			var name = attributeMap[i].name;
+			var localName;
+			var prefix;
+			var separatorIndex = name.indexOf(":");
+			if(separatorIndex >= 0) {
+				prefix = name.slice(0, separatorIndex);
+				localName = name.slice(separatorIndex + 1);
+			} else {
+				prefix = undefined;
+				localName = name;
+			}
+			attributes.push({
+				prefix: prefix,
+				localName: localName,
+				name: name,
+				value: attributeMap[i].value
+			});
+		}
+	}
+
+	return attributes;
+};
+
 // Answer a new data function based on the specified field selector and optional filter(s)
 var fieldParser = new FieldParser();
 Template.createDataFunction = function(fieldSelectorAndFilters) {
@@ -227,8 +259,8 @@ Template.createDataFunction = function(fieldSelectorAndFilters) {
 
 // Instance methods
 // Join data onto template
-Template.prototype.joinData = function(rootElement) {
-	this.rootNode.joinData(rootElement);
+Template.prototype.joinData = function(rootElement, data) {
+	this.rootNode.joinData(rootElement, data);
 
 	return this;
 };
@@ -250,7 +282,7 @@ Template.prototype.addNodesAndRenderers = function(element, parentNode) {
 
 	// Process all direct children recursively
 	var self = this;
-	element.selectAll(function() { return this.children; }).each(function() {
+	element.selectAll(ALL_DIRECT_CHILDREN).each(function() {
 		var childElement = select(this);
 		self.addNodesAndRenderers(childElement, parentNode);
 	});
@@ -315,13 +347,17 @@ Template.prototype.addGroupingNodes = function(element, parentNode) {
 		if(childElement.size() === 1) {
 			this.addNodesAndRenderers(childElement, groupingNode);
 
-			// Add event handlers to the grouping node
+			// Store event handlers in the grouping node (it will be used there).
 			// This is only relevant for childElement since it is removed
 			// from the DOM and will later by 'created' again during a data join.
+			// Because the child might be (re)created multiple times (in a repeat)
+			// through a 'clone' operation, the event handlers will be lost.
+			// Storing these explictly will allow the event handlers to be
+			// present on all child elements.
 			// At this point any (sub)groupings of childElement are removed,
 			// so childElement is 'cleaned' from further child elements from
 			// another grouping.
-			groupingNode.addEventHandlers(childElement);
+			groupingNode.storeEventHandlers(childElement);
 		}
 	}
 };
@@ -329,30 +365,9 @@ Template.prototype.addGroupingNodes = function(element, parentNode) {
 // Add attribute renderers (include attributes referring to style properties) for the specified element to specified parent node
 Template.prototype.addAttributeRenderers = function(element, parentNode) {
 
-	// Create a fixed (ie non live) list of attributes (since attributes will be removed during processing)
-	var attributes = [];
-	if(element.node().hasAttributes()) {
-		var attributeMap = element.node().attributes;
-		for(var i = 0; i < attributeMap.length; i++) {
-			var name = attributeMap[i].name;
-			var localName;
-			var prefix;
-			var separatorIndex = name.indexOf(":");
-			if(separatorIndex >= 0) {
-				prefix = name.slice(0, separatorIndex);
-				localName = name.slice(separatorIndex + 1);
-			} else {
-				prefix = undefined;
-				localName = name;
-			}
-			attributes.push({
-				prefix: prefix,
-				localName: localName,
-				name: name,
-				value: attributeMap[i].value
-			});
-		}
-	}
+	// Create a fixed (ie non live) list of attributes
+	// (since attributes will be removed during processing)
+	var attributes = Template.getAttributesFor(element);
 	
 	// Handle attributes (and styles)
 	attributes.forEach(function(attribute) {

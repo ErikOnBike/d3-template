@@ -2,8 +2,10 @@ import { select } from "d3-selection";
 import { TemplatePath } from "./template-path";
 
 // Constants
-var NODE_BOUNDARY_CLASS = "d3t7s";
-var EVENT_HANDLERS = "__on";
+var ELEMENT_BOUNDARY_ATTRIBUTE = "data-d3t7b";
+var BOOLEAN_ATTRIBUTE_VALUE = "1";	// Smallest (somewhat meaningful) thruthy string value
+var EVENT_HANDLERS = "__on";		// Defined in D3 see https://github.com/d3/d3-selection/blob/master/src/selection/on.js
+var ALL_DIRECT_CHILDREN = function() { return this.children; };
 
 // ---- TemplateNode class ----
 // I am a node in a template and I join and render data onto templates.
@@ -13,16 +15,16 @@ var EVENT_HANDLERS = "__on";
 // onto the template. I therefore use the renderers I know.
 // I also know a number of child nodes within the template which will
 // do the joining and rendering of childs further down the DOM tree.
-export function TemplateNode(element, dataFunction) {
+export function TemplateNode(rootElement, dataFunction) {
 
 	// Set instance variables
-	this.templatePath = new TemplatePath(element);
+	this.templatePath = new TemplatePath(rootElement);
 	this.dataFunction = dataFunction;
 	this.childNodes = [];
 	this.renderers = [];
 
-	// Mark element as node boundary
-	element.classed(NODE_BOUNDARY_CLASS, true);
+	// Mark root element as a boundary
+	rootElement.attr(ELEMENT_BOUNDARY_ATTRIBUTE, BOOLEAN_ATTRIBUTE_VALUE);
 }
 
 // ---- TemplateNode class methods ----
@@ -33,22 +35,24 @@ TemplateNode.templateSelector = function(element) {
 
 // Copy specified data onto all children of the template node (recursively)
 TemplateNode.copyDataToChildren = function(data, element) {
-	element.selectAll(function() { return this.children; }).each(function() {
+	element.selectAll(ALL_DIRECT_CHILDREN).each(function() {
 		var childElement = select(this);
 		childElement.datum(data);
-		if(!childElement.classed(NODE_BOUNDARY_CLASS)) {
+
+		// Copy data to children as long as there is no (node) boundary
+		if(!childElement.attr(ELEMENT_BOUNDARY_ATTRIBUTE)) {
 			TemplateNode.copyDataToChildren(data, childElement);
 		}
 	});
 };
 
 // ---- TemplateNode instance methods ----
-// Answer the elements referred to by the receivers selector
+// Answer the elements referred to by the receiver
 TemplateNode.prototype.resolveTemplateElements = function(rootElement) {
 	return this.templatePath.resolve(rootElement);
 };
 
-// Answer the data function
+// Answer the data function of the receiver
 TemplateNode.prototype.getDataFunction = function() {
 	return this.dataFunction;
 };
@@ -65,10 +69,13 @@ TemplateNode.prototype.addRenderer = function(renderer) {
 
 // Join data onto the template
 // The data is already present at the specified root element (ie at rootElement.datum())
-TemplateNode.prototype.joinData = function(rootElement) {
+TemplateNode.prototype.joinData = function(rootElement, data) {
 
-	// Get data from element and copy to children
-	TemplateNode.copyDataToChildren(rootElement.datum(), rootElement);
+	// Set data onto root element
+	rootElement.datum(data);
+
+	// Copy data to children
+	TemplateNode.copyDataToChildren(data, rootElement);
 
 	// Join data for the child nodes
 	this.childNodes.forEach(function(childNode) {
@@ -83,21 +90,21 @@ TemplateNode.prototype.joinData = function(rootElement) {
 TemplateNode.prototype.render = function(rootElement, transition) {
 
 	// Render attributes
-	var element = this.resolveTemplateElements(rootElement); // @@ element or selection or elements?
+	var templateElements = this.resolveTemplateElements(rootElement);
 	this.renderers.forEach(function(childRenderer) {
-		childRenderer.render(element, transition);
+		childRenderer.render(templateElements, transition);
 	});
 
 	// Render nodes
-	this.renderNodes(element, transition);
+	this.renderNodes(templateElements, transition);
 
 	return this;
 };
 
 // Render data onto the child nodes of the template
-TemplateNode.prototype.renderNodes = function(element, transition) {
+TemplateNode.prototype.renderNodes = function(templateElements, transition) {
 	this.childNodes.forEach(function(childNode) {
-		childNode.render(element, transition);
+		childNode.render(templateElements, transition);
 	});
 
 	return this;
@@ -113,7 +120,7 @@ TemplateNode.prototype.renderNodes = function(element, transition) {
 function GroupingNode(element, dataFunction, childElement) {
 	TemplateNode.call(this, element, dataFunction);
 	this.childElement = childElement;
-	this.storedEvents = [];
+	this.storedEventHandlers = [];
 }
 GroupingNode.prototype = Object.create(TemplateNode.prototype);
 GroupingNode.prototype.constructor = GroupingNode;
@@ -129,7 +136,7 @@ GroupingNode.prototype.joinData = function(rootElement) {
 
 	// Join data onto DOM
 	var joinedElements = this.resolveTemplateElements(rootElement)
-		.selectAll(function() { return this.children; })
+		.selectAll(ALL_DIRECT_CHILDREN)
 			.data(this.getDataFunction())
 	;
 
@@ -165,13 +172,13 @@ GroupingNode.prototype.joinData = function(rootElement) {
 	return this;
 };
 
-// Add event handlers for specified element to the receiver
-GroupingNode.prototype.addEventHandlers = function(element) {
+// Store the event handlers of the specified element in the receiver
+GroupingNode.prototype.storeEventHandlers = function(element) {
 
 	// Add event handlers for element
 	var eventHandlers = element.node()[EVENT_HANDLERS];
 	if(eventHandlers && eventHandlers.length > 0) {
-		this.storedEvents.push({
+		this.storedEventHandlers.push({
 			templatePath: new TemplatePath(element),
 			eventHandlers: eventHandlers
 		});
@@ -179,17 +186,17 @@ GroupingNode.prototype.addEventHandlers = function(element) {
 
 	// Add event handlers for direct children (recursively)
 	var self = this;
-	element.selectAll(function() { return this.children; }).each(function() {
+	element.selectAll(ALL_DIRECT_CHILDREN).each(function() {
 		var childElement = select(this);
-		self.addEventHandlers(childElement);
+		self.storeEventHandlers(childElement);
 	});
 };
 
 // Apply event handlers onto specified elements (which where created by joining data)
 GroupingNode.prototype.applyEventHandlers = function(elements) {
-	this.storedEvents.forEach(function(storedEvent) {
-		var selection = storedEvent.templatePath.resolve(elements);
-		var eventHandlers = storedEvent.eventHandlers;
+	this.storedEventHandlers.forEach(function(storedEventHandler) {
+		var selection = storedEventHandler.templatePath.resolve(elements);
+		var eventHandlers = storedEventHandler.eventHandlers;
 		eventHandlers.forEach(function(eventHandler) {
 			var typename = eventHandler.type;
 			if(eventHandler.name) {
@@ -201,8 +208,8 @@ GroupingNode.prototype.applyEventHandlers = function(elements) {
 };
 
 // Render data onto the child nodes of the template
-GroupingNode.prototype.renderNodes = function(element, transition) {
-	var childElements = element.selectAll(function() { return this.children; });
+GroupingNode.prototype.renderNodes = function(templateElements, transition) {
+	var childElements = templateElements.selectAll(ALL_DIRECT_CHILDREN);
 	this.childNodes.forEach(function(childNode) {
 		childNode.render(childElements, transition);
 	});
@@ -213,6 +220,7 @@ GroupingNode.prototype.renderNodes = function(element, transition) {
 // ---- RepeatNode class ----
 // I am a GroupingNode and I create DOM trees based on repeatable
 // data (meaning an Array of values).
+//
 // Implementation: GroupingNode already contains the default
 // implementation for repeating data.
 export function RepeatNode(element, dataFunction, childElement) {
