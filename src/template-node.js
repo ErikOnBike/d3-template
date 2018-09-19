@@ -1,7 +1,7 @@
-import { select, matcher } from "d3-selection";
+import { select } from "d3-selection";
+import { TemplatePath } from "./template-path";
 
 // Constants
-var ELEMENT_SELECTOR_ATTRIBUTE = "data-d3t7s";
 var NODE_BOUNDARY_CLASS = "d3t7s";
 var EVENT_HANDLERS = "__on";
 
@@ -13,38 +13,22 @@ var EVENT_HANDLERS = "__on";
 // onto the template. I therefore use the renderers I know.
 // I also know a number of child nodes within the template which will
 // do the joining and rendering of childs further down the DOM tree.
-export function TemplateNode(templatePath) {
+export function TemplateNode(element, dataFunction) {
 
 	// Set instance variables
-	this.selector = TemplateNode.generateUniqueSelector(templatePath.element); // @@
-	this.dataFunction = templatePath.dataFunction;
+	this.templatePath = new TemplatePath(element);
+	this.dataFunction = dataFunction;
 	this.childNodes = [];
 	this.renderers = [];
+
+	// Mark element as node boundary
+	element.classed(NODE_BOUNDARY_CLASS, true);
 }
 
 // ---- TemplateNode class methods ----
-// Generate a unique selector for specified element (this selector might be copied into siblings for repeat groupings, so uniqueness is not absolute)
-var selectorIdCounter = 0;
-TemplateNode.generateUniqueSelector = function(element) {
-
-	// Check for presence of selector id
-	var selectorId = element.attr(ELEMENT_SELECTOR_ATTRIBUTE);
-
-	if(!selectorId) {
-
-		// Add new id and set template class
-		selectorId = "_" + selectorIdCounter.toString(36) + "_";
-		selectorIdCounter++;
-		element.attr(ELEMENT_SELECTOR_ATTRIBUTE, selectorId);
-	}
-
-	// Answer the selector
-	return "[" + ELEMENT_SELECTOR_ATTRIBUTE + "=\"" + selectorId + "\"]";
-};
-
 // Answer the template selector for the specified element
 TemplateNode.templateSelector = function(element) {
-	return element.attr(ELEMENT_SELECTOR_ATTRIBUTE);
+	return TemplatePath.selector(element);
 };
 
 // Copy specified data onto all children of the template node (recursively)
@@ -59,15 +43,9 @@ TemplateNode.copyDataToChildren = function(data, element) {
 };
 
 // ---- TemplateNode instance methods ----
-// Answer the element referred to by the receivers selector
-TemplateNode.prototype.getElementIn = function(rootElement) {
-
-	// The resulting element is either the root element itself or child(ren) of the root element
-	var selection = rootElement.filter(matcher(this.selector));
-	if(selection.size() === 0) {
-		selection = rootElement.selectAll(this.selector);
-	}
-	return selection;
+// Answer the elements referred to by the receivers selector
+TemplateNode.prototype.resolveTemplateElements = function(rootElement) {
+	return this.templatePath.resolve(rootElement);
 };
 
 // Answer the data function
@@ -105,7 +83,7 @@ TemplateNode.prototype.joinData = function(rootElement) {
 TemplateNode.prototype.render = function(rootElement, transition) {
 
 	// Render attributes
-	var element = this.getElementIn(rootElement);
+	var element = this.resolveTemplateElements(rootElement); // @@ element or selection or elements?
 	this.renderers.forEach(function(childRenderer) {
 		childRenderer.render(element, transition);
 	});
@@ -132,10 +110,10 @@ TemplateNode.prototype.renderNodes = function(element, transition) {
 // When I join data onto the template (and thereby create DOM
 // trees) I also apply these event handlers from the template onto
 // the newly created DOM trees.
-function GroupingNode(templatePath, childElement) {
-	TemplateNode.call(this, templatePath);
+function GroupingNode(element, dataFunction, childElement) {
+	TemplateNode.call(this, element, dataFunction);
 	this.childElement = childElement;
-	this.eventHandlersMap = {};
+	this.storedEvents = [];
 }
 GroupingNode.prototype = Object.create(TemplateNode.prototype);
 GroupingNode.prototype.constructor = GroupingNode;
@@ -150,7 +128,7 @@ GroupingNode.prototype.joinData = function(rootElement) {
 	}
 
 	// Join data onto DOM
-	var joinedElements = this.getElementIn(rootElement)
+	var joinedElements = this.resolveTemplateElements(rootElement)
 		.selectAll(function() { return this.children; })
 			.data(this.getDataFunction())
 	;
@@ -193,9 +171,10 @@ GroupingNode.prototype.addEventHandlers = function(element) {
 	// Add event handlers for element
 	var eventHandlers = element.node()[EVENT_HANDLERS];
 	if(eventHandlers && eventHandlers.length > 0) {
-		var selector = TemplateNode.generateUniqueSelector(element);
-		var entry = this.eventHandlersMap[selector];
-		this.eventHandlersMap[selector] = entry ? entry.concat(eventHandlers) : eventHandlers;
+		this.storedEvents.push({
+			templatePath: new TemplatePath(element),
+			eventHandlers: eventHandlers
+		});
 	}
 
 	// Add event handlers for direct children (recursively)
@@ -208,13 +187,10 @@ GroupingNode.prototype.addEventHandlers = function(element) {
 
 // Apply event handlers onto specified elements (which where created by joining data)
 GroupingNode.prototype.applyEventHandlers = function(elements) {
-	var eventHandlersMap = this.eventHandlersMap;
-	Object.keys(eventHandlersMap).forEach(function(selector) {
-		var selection = elements.filter(matcher(selector));
-		if(selection.size() === 0) {
-			selection = elements.select(selector);
-		}
-		eventHandlersMap[selector].forEach(function(eventHandler) {
+	this.storedEvents.forEach(function(storedEvent) {
+		var selection = storedEvent.templatePath.resolve(elements);
+		var eventHandlers = storedEvent.eventHandlers;
+		eventHandlers.forEach(function(eventHandler) {
 			var typename = eventHandler.type;
 			if(eventHandler.name) {
 				typename += "." + eventHandler.name;
@@ -239,8 +215,8 @@ GroupingNode.prototype.renderNodes = function(element, transition) {
 // data (meaning an Array of values).
 // Implementation: GroupingNode already contains the default
 // implementation for repeating data.
-export function RepeatNode(templatePath, childElement) {
-	GroupingNode.call(this, templatePath, childElement);
+export function RepeatNode(element, dataFunction, childElement) {
+	GroupingNode.call(this, element, dataFunction, childElement);
 }
 RepeatNode.prototype = Object.create(GroupingNode.prototype);
 RepeatNode.prototype.constructor = RepeatNode;
@@ -249,8 +225,8 @@ RepeatNode.prototype.constructor = RepeatNode;
 // I am a GroupingNode and I create DOM trees based on a conditional
 // value (meaning any 'thruthy' value)
 // see https://developer.mozilla.org/en-US/docs/Glossary/Truth)
-export function IfNode(templatePath, childElement) {
-	GroupingNode.call(this, templatePath, childElement);
+export function IfNode(element, dataFunction, childElement) {
+	GroupingNode.call(this, element, dataFunction, childElement);
 }
 IfNode.prototype = Object.create(GroupingNode.prototype);
 IfNode.prototype.constructor = IfNode;
@@ -272,8 +248,8 @@ IfNode.prototype.getDataFunction = function() {
 // ---- WithNode class ----
 // I am a GroupingNode and I create DOM trees based on an object's property
 // value (resulting in a DOM subtree if the property is present)
-export function WithNode(templatePath, childElement) {
-	GroupingNode.call(this, templatePath, childElement);
+export function WithNode(element, dataFunction, childElement) {
+	GroupingNode.call(this, element, dataFunction, childElement);
 }
 WithNode.prototype = Object.create(GroupingNode.prototype);
 WithNode.prototype.constructor = WithNode;

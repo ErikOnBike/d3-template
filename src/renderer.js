@@ -1,5 +1,5 @@
-import { select, matcher } from "d3-selection";
-import { TemplateNode } from "./template-node"; // @@
+import { select } from "d3-selection";
+import { TemplatePath } from "./template-path";
 
 // Globals
 export var namedRenderFilters = {};
@@ -30,25 +30,18 @@ function renderFilterPrivate(name, filterFunc, isTweenFilter) {
 }
 
 // Renderer - Renders data on element
-function Renderer(templatePath) {
-	this.selector = TemplateNode.generateUniqueSelector(templatePath.element); // @@
-	this.dataFunction = templatePath.dataFunction;
+function Renderer(element, dataFunction) {
+	this.templatePath = new TemplatePath(element);
+	this.dataFunction = dataFunction;
 }
 
 Renderer.prototype.render = function(/* templateElement */) {
 	// Intentionally left empty
 };
 
-// Answer the templatePath of the receiver
-// Answer the element referred to by the receivers templatePath // @@ reuse (it is present on 2 more locations)
-Renderer.prototype.getElementIn = function(rootElement) {
-
-	// The resulting element is either the root element itself or child(ren) of the root element
-	var selection = rootElement.filter(matcher(this.selector));
-	if(selection.size() === 0) {
-		selection = rootElement.selectAll(this.selector);
-	}
-	return selection;
+// Answer the element referred to by the receivers templatePath
+Renderer.prototype.resolveToRenderElement = function(rootElement) {
+	return this.templatePath.resolve(rootElement);
 };
 
 // Answer the data function of the receiver
@@ -62,8 +55,8 @@ Renderer.prototype.isTemplateNode = function() {
 };
 
 // TextRenderer - Renders data as text of element
-export function TextRenderer(templatePath) {
-	Renderer.call(this, templatePath);
+export function TextRenderer(element, dataFunction) {
+	Renderer.call(this, element, dataFunction);
 }
 
 TextRenderer.prototype = Object.create(Renderer.prototype);
@@ -76,7 +69,7 @@ TextRenderer.prototype.render = function(templateElement, transition) {
 	}
 
 	// Render text
-	var element = this.getElementIn(templateElement);
+	var element = this.resolveToRenderElement(templateElement);
 	var dataFunction = this.getDataFunction();
 	if(dataFunction.isTweenFunction) {
 		if(transition) {
@@ -100,8 +93,8 @@ TextRenderer.prototype.render = function(templateElement, transition) {
 };
 
 // AttributeRenderer - Renders data as attribute of element
-export function AttributeRenderer(templatePath, attribute) {
-	Renderer.call(this, templatePath);
+export function AttributeRenderer(element, dataFunction, attribute) {
+	Renderer.call(this, element, dataFunction);
 	this.attribute = attribute;
 }
 
@@ -115,7 +108,7 @@ AttributeRenderer.prototype.render = function(templateElement, transition) {
 	}
 
 	// Render attribute
-	var element = this.getElementIn(templateElement);
+	var element = this.resolveToRenderElement(templateElement);
 	var dataFunction = this.getDataFunction();
 	if(dataFunction.isTweenFunction) {
 		if(transition) {
@@ -138,8 +131,8 @@ AttributeRenderer.prototype.render = function(templateElement, transition) {
 };
 
 // StyleRenderer - Renders data as style of element
-export function StyleRenderer(templatePath, style) {
-	Renderer.call(this, templatePath);
+export function StyleRenderer(element, dataFunction, style) {
+	Renderer.call(this, element, dataFunction);
 	this.style = style;
 }
 
@@ -153,7 +146,7 @@ StyleRenderer.prototype.render = function(templateElement, transition) {
 	}
 
 	// Render style
-	var element = this.getElementIn(templateElement);
+	var element = this.resolveToRenderElement(templateElement);
 	var dataFunction = this.getDataFunction();
 	if(dataFunction.isTweenFunction) {
 		if(transition) {
@@ -176,8 +169,8 @@ StyleRenderer.prototype.render = function(templateElement, transition) {
 };
 
 // PropertyRenderer - Renders data as property of element
-export function PropertyRenderer(templatePath, property) {
-	Renderer.call(this, templatePath);
+export function PropertyRenderer(element, dataFunction, property) {
+	Renderer.call(this, element, dataFunction);
 	this.property = property;
 }
 
@@ -190,7 +183,7 @@ PropertyRenderer.prototype.render = function(templateElement, transition) {
 	// be used with a property.
 
 	// Render property
-	var element = this.getElementIn(templateElement);
+	var element = this.resolveToRenderElement(templateElement);
 	var dataFunction = this.getDataFunction();
 	if(dataFunction.isTweenFunction) {
 		if(transition) {
