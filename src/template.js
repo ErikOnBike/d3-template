@@ -1,5 +1,5 @@
 import { select } from "d3-selection";
-import { TemplateNode, RepeatNode, IfNode, WithNode } from "./template-node";
+import { TemplateNode, RepeatNode, IfNode, WithNode, ImportNode } from "./template-node";
 import { FieldParser } from "./field-parser";
 import { namedRenderFilters, AttributeRenderer, StyleRenderer, PropertyRenderer, TextRenderer } from "./renderer";
 
@@ -260,7 +260,8 @@ Template.createDataFunction = function(fieldSelectorAndFilters) {
 // Instance methods
 // Join data onto template
 Template.prototype.joinData = function(rootElement, data) {
-	this.rootNode.joinData(rootElement, data);
+	rootElement.datum(data);
+	this.rootNode.joinData(rootElement);
 
 	return this;
 };
@@ -288,15 +289,18 @@ Template.prototype.addNodesAndRenderers = function(element, parentNode) {
 	});
 };
 
-// Add grouping nodes (like repeat, if, with) for the specified element to specified parent node
+// Add grouping nodes (like repeat, if, with or import) for the specified element to specified parent node
 Template.prototype.addGroupingNodes = function(element, parentNode) {
 
 	// Handle grouping nodes
 	var groupings = [
 		{ attr: this.options.repeatAttribute, nodeClass: RepeatNode, match: false },
 		{ attr: this.options.ifAttribute, nodeClass: IfNode, match: false },
-		{ attr: this.options.withAttribute, nodeClass: WithNode, match: false }
+		{ attr: this.options.withAttribute, nodeClass: WithNode, match: false },
+		{ attr: this.options.importAttribute, nodeClass: ImportNode, match: false }
 	];
+	var withGrouping = groupings[2];
+	var importGrouping = groupings[3];
 
 	// Collect grouping node info from element
 	groupings.forEach(function(grouping) {
@@ -306,10 +310,31 @@ Template.prototype.addGroupingNodes = function(element, parentNode) {
 		}
 	});
 
-	// Validate there is 0 or 1 match
-	groupings = groupings.filter(function(grouping) { return grouping.match; });
+	// Validate there is 0 or 1 match (handle import separately)
+	groupings = groupings.filter(function(grouping) { return grouping !== importGrouping && grouping.match; });
 	if(groupings.length > 1) {
 		throw new Error("A repeat, if or with grouping can't be combined on same element. Wrap one in the other.");
+	}
+
+	// Handle import specifically
+	// Import can only be combined with the with-grouping. If with-grouping is present 
+	// use its data function for the import (or otherwise the default pass through data
+	// function).
+	if(importGrouping.match) {
+		if(groupings.length === 1 && !withGrouping.match) {
+			throw new Error("A repeat or if grouping can't be combined with import on the same element. Wrap one in the other.");
+		}
+		if(element.node().children.length > 0) {
+			throw new Error("No child elements allowed within an import grouping.");
+		}
+		if(element.text().trim().length !== 0) {
+			throw new Error("No text allowed within an import grouping.");
+		}
+
+		// Set groupings to only contain the import grouping
+		importGrouping.importSelector = importGrouping.match[1];
+		importGrouping.match = withGrouping.match ? withGrouping.match : [ "{{.}}", "." ];
+		groupings = [ importGrouping ];
 	}
 
 	// Handle grouping
@@ -331,6 +356,12 @@ Template.prototype.addGroupingNodes = function(element, parentNode) {
 			throw new Error("Only a single child element allowed within repeat, if or with grouping. Wrap child elements in a container element.");
 		}
 
+		// Set child element to the child element selector in case of import
+		// For import there can't be a child so it is okay to 'overwrite' it.
+		if(importGrouping.importSelector) {
+			childElement = Template.createDataFunction(importGrouping.importSelector);
+		}
+
 		// Add grouping nodes
 		var grouping = groupings[0];
 		var groupingNode = new grouping.nodeClass(
@@ -343,21 +374,23 @@ Template.prototype.addGroupingNodes = function(element, parentNode) {
 		// Remove grouping attribute
 		element.attr(grouping.attr, null);
 
-		// Add template nodes and renderers for the grouping element's child
-		if(childElement.size() === 1) {
-			this.addNodesAndRenderers(childElement, groupingNode);
+		// Add template nodes and renderers for the grouping element's child (except for import)
+		if(!importGrouping.importSelector) {
+			if(childElement.size() === 1) {
+				this.addNodesAndRenderers(childElement, groupingNode);
 
-			// Store event handlers in the grouping node (it will be used there).
-			// This is only relevant for childElement since it is removed
-			// from the DOM and will later by 'created' again during a data join.
-			// Because the child might be (re)created multiple times (in a repeat)
-			// through a 'clone' operation, the event handlers will be lost.
-			// Storing these explictly will allow the event handlers to be
-			// present on all child elements.
-			// At this point any (sub)groupings of childElement are removed,
-			// so childElement is 'cleaned' from further child elements from
-			// another grouping.
-			groupingNode.storeEventHandlers(childElement);
+				// Store event handlers in the grouping node (it will be used there).
+				// This is only relevant for childElement since it is removed
+				// from the DOM and will later by 'created' again during a data join.
+				// Because the child might be (re)created multiple times (in a repeat)
+				// through a 'clone' operation, the event handlers will be lost.
+				// Storing these explictly will allow the event handlers to be
+				// present on all child elements.
+				// At this point any (sub)groupings of childElement are removed,
+				// so childElement is 'cleaned' from further child elements from
+				// another grouping.
+				groupingNode.storeEventHandlers(childElement);
+			}
 		}
 	}
 };
