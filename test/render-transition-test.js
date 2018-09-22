@@ -1,4 +1,3 @@
-/*
 var tape = require("tape");
 tape("tween temporary removed", function(test) {
 	test.end();
@@ -135,4 +134,3 @@ tape("render() attribute within repeating group with transition", function(test)
 		});
 	}, 100);
 });
-*/
