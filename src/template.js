@@ -106,7 +106,7 @@ export function template(selection, options) {
 		var rootElement = select(this);
 
 		// Create a template root node for the element
-		var rootNode = new TemplateNode(rootElement, Template.createDataFunction("."));
+		var rootNode = new TemplateNode(rootElement);
 
 		// Create template using specified identification mechanism
 		var template = new Template(rootNode, options);

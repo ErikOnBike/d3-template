@@ -15,11 +15,10 @@ var ALL_DIRECT_CHILDREN = function() { return this.children; };
 // onto the template. I therefore use the renderers I know.
 // I also know a number of child nodes within the template which will
 // do the joining and rendering of childs further down the DOM tree.
-export function TemplateNode(rootElement, dataFunction) {
+export function TemplateNode(rootElement) {
 
 	// Set instance variables
 	this.templatePath = new TemplatePath(rootElement);
-	this.dataFunction = dataFunction;
 	this.childNodes = [];
 	this.renderers = [];
 
@@ -50,11 +49,6 @@ TemplateNode.copyDataToChildren = function(data, element) {
 // Answer the elements referred to by the receiver
 TemplateNode.prototype.resolveTemplateElements = function(rootElement) {
 	return this.templatePath.resolve(rootElement);
-};
-
-// Answer the data function of the receiver
-TemplateNode.prototype.getDataFunction = function() {
-	return this.dataFunction;
 };
 
 // Add child template node to the receiver
@@ -115,7 +109,8 @@ TemplateNode.prototype.renderNodes = function(templateElements, transition) {
 // trees) I also apply these event handlers from the template onto
 // the newly created DOM trees.
 function GroupingNode(element, dataFunction, childElement) {
-	TemplateNode.call(this, element, dataFunction);
+	TemplateNode.call(this, element);
+	this.dataFunction = dataFunction;
 	this.childElement = childElement;
 	this.storedEventHandlers = [];
 }
@@ -123,6 +118,11 @@ GroupingNode.prototype = Object.create(TemplateNode.prototype);
 GroupingNode.prototype.constructor = GroupingNode;
 
 // ---- GroupingNode instance methods ----
+// Answer the data function of the receiver
+GroupingNode.prototype.getDataFunction = function() {
+	return this.dataFunction;
+};
+
 // Answer the child element of the receiver
 GroupingNode.prototype.getChildElement = function(/* rootElement */) {
 	return this.childElement;
@@ -262,7 +262,7 @@ IfNode.prototype.getDataFunction = function() {
 	var self = this;
 	return function(d, i, nodes) {
 		var node = this;
-		return TemplateNode.prototype.getDataFunction.call(self).call(node, d, i, nodes) ? [ d ] : [];
+		return GroupingNode.prototype.getDataFunction.call(self).call(node, d, i, nodes) ? [ d ] : [];
 	};
 };
 
@@ -285,7 +285,7 @@ WithNode.prototype.getDataFunction = function() {
 	var self = this;
 	return function(d, i, nodes) {
 		var node = this;
-		return [ TemplateNode.prototype.getDataFunction.call(self).call(node, d, i, nodes) ];
+		return [ GroupingNode.prototype.getDataFunction.call(self).call(node, d, i, nodes) ];
 	};
 };
 
@@ -309,7 +309,7 @@ ImportNode.prototype.constructor = ImportNode;
 ImportNode.prototype.getDataFunction = WithNode.prototype.getDataFunction;
 
 // Answer the data function for regular usage (see explanation above)
-ImportNode.prototype.getRegularDataFunction = TemplateNode.prototype.getDataFunction;
+ImportNode.prototype.getRegularDataFunction = GroupingNode.prototype.getDataFunction;
 
 // Answer the actual child element (based on the specified root element)
 ImportNode.prototype.getChildElement = function(rootElement) {
