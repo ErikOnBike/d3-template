@@ -64,12 +64,12 @@ TextRenderer.prototype.constructor = TextRenderer;
 TextRenderer.prototype.render = function(templateElement, transition) {
 
 	// Attach transition to element (if present)
+	var element = this.resolveToRenderElement(templateElement);
 	if(transition) {
-		templateElement = templateElement.transition(transition);
+		element = element.transition(transition);
 	}
 
 	// Render text
-	var element = this.resolveToRenderElement(templateElement);
 	var dataFunction = this.getDataFunction();
 	if(dataFunction.isTweenFunction) {
 		if(transition) {
@@ -103,12 +103,12 @@ AttributeRenderer.prototype.constructor = AttributeRenderer;
 AttributeRenderer.prototype.render = function(templateElement, transition) {
 
 	// Attach transition to element (if present)
+	var element = this.resolveToRenderElement(templateElement);
 	if(transition) {
-		templateElement = templateElement.transition(transition);
+		element = element.transition(transition);
 	}
 
 	// Render attribute
-	var element = this.resolveToRenderElement(templateElement);
 	var dataFunction = this.getDataFunction();
 	if(dataFunction.isTweenFunction) {
 		if(transition) {
@@ -141,12 +141,12 @@ StyleRenderer.prototype.constructor = StyleRenderer;
 StyleRenderer.prototype.render = function(templateElement, transition) {
 
 	// Attach transition to element (if present)
+	var element = this.resolveToRenderElement(templateElement);
 	if(transition) {
-		templateElement = templateElement.transition(transition);
+		element = element.transition(transition);
 	}
 
 	// Render style
-	var element = this.resolveToRenderElement(templateElement);
 	var dataFunction = this.getDataFunction();
 	if(dataFunction.isTweenFunction) {
 		if(transition) {
