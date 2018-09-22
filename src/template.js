@@ -11,11 +11,15 @@ var defaults = {
 	importAttribute: "data-import"
 };
 
+// ---- Fix for IE (small kneefall because difficult to fix otherwise) ----
+var REG_EX_FLAG = "";
+try { new RegExp(".*", "u"); REG_EX_FLAG = "u"; } catch(e) { /* Ignore */ }
+
 // ---- Constants ----
-var FIELD_SELECTOR_REG_EX = /^\s*\{\{\s*(.*)\s*\}\}\s*$/u;
-var ATTRIBUTE_REFERENCE_REG_EX = /^data-attr-(.*)$/u;
-var STYLE_REFERENCE_REG_EX = /^data-style-(.*)$/u;
-var PROPERTY_REFERENCE_REG_EX = /^data-prop-(.*)$/u;
+var FIELD_SELECTOR_REG_EX = new RegExp("^\\s*\\{\\{\\s*(.*)\\s*\\}\\}\\s*$", REG_EX_FLAG);
+var ATTRIBUTE_REFERENCE_REG_EX = new RegExp("^data-attr-(.*)$", REG_EX_FLAG);
+var STYLE_REFERENCE_REG_EX = new RegExp("^data-style-(.*)$", REG_EX_FLAG);
+var PROPERTY_REFERENCE_REG_EX = new RegExp("^data-prop-(.*)$", REG_EX_FLAG);
 var ALL_DIRECT_CHILDREN = function() { return this.children; };
 var SVG_CAMEL_CASE_ATTRS = {};	// Combined SVG 1.1 and SVG 2 (draft 14 feb 2018)
 [
