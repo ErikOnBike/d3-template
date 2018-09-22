@@ -138,6 +138,8 @@ export function selection_render(data) {
 }
 
 // Render data on specified selection (selection should consist of a template)
+// If selection consists of multiple elements, the same data is rendered on all
+// elements.
 export function render(selectionOrTransition, data) {
 
 	// Render templates in the current selection
