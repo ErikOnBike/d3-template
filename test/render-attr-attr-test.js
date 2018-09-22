@@ -41,3 +41,13 @@ tape("render() camelcase SVG attributes", function(test) {
 	test.equal(selection.attr("viewBox"), "0,0,100,100", "Camel case attribute value is rendered on root element");
 	test.end();
 });
+
+tape("render() attribute through custom attribute with literal value", function(test) {
+	var document = jsdom("<div attr-id='{{.}}'></div>");
+	var node = document.querySelector("div");
+	var selection = d3.select(node);
+	selection.template({ indirectAttributePrefix: "attr-" }).render(123);
+	test.equal(selection.attr("id"), "123", "Attribute 'id' is rendered on element");
+	test.equal(selection.attr("data-attr-id"), null, "Data attribute is no longer present");
+	test.end();
+});

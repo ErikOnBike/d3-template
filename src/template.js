@@ -8,7 +8,10 @@ var defaults = {
 	repeatAttribute: "data-repeat",
 	ifAttribute: "data-if",
 	withAttribute: "data-with",
-	importAttribute: "data-import"
+	importAttribute: "data-import",
+	indirectAttributePrefix: "data-attr-",
+	indirectStylePrefix: "data-style-",
+	indirectPropertyPrefix: "data-prop-"
 };
 
 // ---- Fix for IE (small kneefall because difficult to fix otherwise) ----
@@ -17,9 +20,6 @@ try { new RegExp(".*", "u"); REG_EX_FLAG = "u"; } catch(e) { /* Ignore */ }
 
 // ---- Constants ----
 var FIELD_SELECTOR_REG_EX = new RegExp("^\\s*\\{\\{\\s*(.*)\\s*\\}\\}\\s*$", REG_EX_FLAG);
-var ATTRIBUTE_REFERENCE_REG_EX = new RegExp("^data-attr-(.*)$", REG_EX_FLAG);
-var STYLE_REFERENCE_REG_EX = new RegExp("^data-style-(.*)$", REG_EX_FLAG);
-var PROPERTY_REFERENCE_REG_EX = new RegExp("^data-prop-(.*)$", REG_EX_FLAG);
 var ALL_DIRECT_CHILDREN = function() { return this.children; };
 var SVG_CAMEL_CASE_ATTRS = {};	// Combined SVG 1.1 and SVG 2 (draft 14 feb 2018)
 [
@@ -103,6 +103,11 @@ export function template(selection, options) {
 
 	// Decide to use options or defaults
 	options = Object.assign({}, defaults, options || {});
+
+	// Store regular expressions for accessing indirect attributes
+	options.indirectAttributeRegEx = new RegExp("^" + options.indirectAttributePrefix + "(.*)$", REG_EX_FLAG);
+	options.indirectStyleRegEx = new RegExp("^" + options.indirectStylePrefix + "(.*)$", REG_EX_FLAG);
+	options.indirectPropertyRegEx = new RegExp("^" + options.indirectPropertyPrefix + "(.*)$", REG_EX_FLAG);
 
 	// Create templates from the current selection
 	selection.each(function() {
@@ -415,6 +420,7 @@ Template.prototype.addAttributeRenderers = function(element, parentNode) {
 	var attributes = Template.getAttributesFor(element);
 	
 	// Handle attributes (and styles)
+	var options = this.options;
 	attributes.forEach(function(attribute) {
 
 		// Check if field selector is present
@@ -424,7 +430,7 @@ Template.prototype.addAttributeRenderers = function(element, parentNode) {
 			// Decide which attribute/style will be rendered
 			var renderClass = AttributeRenderer;
 			var renderAttributeName = attribute.localName;
-			var nameMatch = renderAttributeName.match(ATTRIBUTE_REFERENCE_REG_EX);
+			var nameMatch = renderAttributeName.match(options.indirectAttributeRegEx);
 			if(nameMatch) {
 				renderAttributeName = nameMatch[1];	// Render the referenced attribute
 
@@ -438,12 +444,12 @@ Template.prototype.addAttributeRenderers = function(element, parentNode) {
 					}
 				}
 			} else {
-				nameMatch = renderAttributeName.match(STYLE_REFERENCE_REG_EX);
+				nameMatch = renderAttributeName.match(options.indirectStyleRegEx);
 				if(nameMatch) {
 					renderAttributeName = nameMatch[1];	// Render the referenced style
 					renderClass = StyleRenderer;
 				} else {
-					nameMatch = renderAttributeName.match(PROPERTY_REFERENCE_REG_EX);
+					nameMatch = renderAttributeName.match(options.indirectPropertyRegEx);
 					if(nameMatch) {
 						renderAttributeName = nameMatch[1];	// Render the referenced property
 						renderClass = PropertyRenderer;
