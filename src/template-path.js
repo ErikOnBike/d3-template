@@ -1,6 +1,6 @@
 import { matcher } from "d3-selection";
 
-// Constants
+// ---- Constants ----
 var ELEMENT_SELECTOR_ATTRIBUTE = "data-d3t7s";
 
 // ---- TemplatePath class ----
@@ -44,11 +44,6 @@ TemplatePath.generateUniqueSelector = function(element) {
 
 	// Answer the selector
 	return "[" + ELEMENT_SELECTOR_ATTRIBUTE + "=\"" + selectorId + "\"]";
-};
-
-// Answer the selector of the specified element (if any)
-TemplatePath.selector = function(element) {
-	return element.attr(ELEMENT_SELECTOR_ATTRIBUTE);
 };
 
 // ---- TemplatePath instance methods ----

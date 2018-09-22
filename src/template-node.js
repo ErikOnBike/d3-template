@@ -26,11 +26,6 @@ export function TemplateNode(rootElement) {
 }
 
 // ---- TemplateNode class methods ----
-// Answer the template selector for the specified element
-TemplateNode.templateSelector = function(element) {
-	return TemplatePath.selector(element);
-};
-
 // Copy specified data onto all children of the DOM node (recursively)
 // Parameter data is optional. If not supplied the node's data is used.
 TemplateNode.copyDataToChildren = function(node, data) {
