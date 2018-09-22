@@ -1,15 +1,13 @@
 import { select } from "d3-selection";
 import { TemplatePath } from "./template-path";
 
-// Constants
+// ---- Constants ----
 var ELEMENT_BOUNDARY_ATTRIBUTE = "data-d3t7b";
 var BOOLEAN_ATTRIBUTE_VALUE = "1";	// Smallest (somewhat meaningful) thruthy string value
 var ALL_DIRECT_CHILDREN = function() { return this.children; };
 
 // ---- TemplateNode class ----
 // I am a node in a template and I join and render data onto templates.
-// When joining data onto a template I create (partial) DOM trees.
-// These newly created DOM trees will have data bound to them.
 // After data is bound to a template I can render attributes and text
 // onto the template. I therefore use the renderers I know.
 // I also know a number of child nodes within the template which will
@@ -62,7 +60,6 @@ TemplateNode.prototype.addRenderer = function(renderer) {
 };
 
 // Join data onto the template
-// The data is already present at the specified root element (ie at rootElement.datum())
 TemplateNode.prototype.joinData = function(rootElement) {
 
 	// Copy data to children (data is already present in rootElement so don't provide it here)
@@ -153,7 +150,7 @@ GroupingNode.prototype.joinData = function(rootElement) {
 				// (removing its id for uniqueness and copying template if applicable)
 				var clonedNode = childNode.cloneNode(true);
 				clonedNode.removeAttribute("id");
-				if(childNode.__d3t7__) {
+				if(childNode.__d3t7__ && childNode.__d3t7__.render) {
 					clonedNode.__d3t7__ = childNode.__d3t7__;
 				}
 				return clonedNode;
