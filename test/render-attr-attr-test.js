@@ -1,7 +1,6 @@
 var tape = require("tape");
 var jsdom = require("./jsdom");
-var d3 = Object.assign({}, require("d3-selection"));
-require("../");
+var d3 = Object.assign({}, require("d3-selection"), require("../"));
 
 tape("render() attribute through data-attribute with literal value", function(test) {
 	var document = jsdom("<div data-attr-id='{{.}}'></div>");

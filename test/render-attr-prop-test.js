@@ -1,7 +1,6 @@
 var tape = require("tape");
 var jsdom = require("./jsdom");
-var d3 = Object.assign({}, require("d3-selection"));
-require("../");
+var d3 = Object.assign({}, require("d3-selection"), require("../"));
 
 tape("render() property through data-property with literal value", function(test) {
 	var document = jsdom("<input type='text' data-prop-value='{{.}}'></input>");

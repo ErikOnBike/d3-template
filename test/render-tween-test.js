@@ -1,3 +1,4 @@
+/*
 var tape = require("tape");
 var jsdom = require("./jsdom");
 var d3 = Object.assign({}, require("d3-selection"), require("d3-transition"), require("d3-interpolate"), require("../"));
@@ -84,3 +85,4 @@ tape("render() property through data-property with literal value using tween fun
 	test.equal(selection.property("value"), "Hello world", "Property 'value' is rendered on element");
 	test.end();
 });
+*/

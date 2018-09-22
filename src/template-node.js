@@ -146,7 +146,13 @@ GroupingNode.prototype.joinData = function(rootElement) {
 	// Add new elements
 	var newElements = joinedElements
 		.enter()
-			.append(function() { return childElement.node().cloneNode(true); })
+			.append(function() {
+
+				// Return a clone of the child element (removing its id for uniqueness)
+				var clonedNode = childElement.node().cloneNode(true);
+				clonedNode.removeAttribute("id");
+				return clonedNode;
+			})
 	;
 
 	// Add event handlers to new elements
@@ -294,12 +300,18 @@ ImportNode.prototype = Object.create(GroupingNode.prototype);
 ImportNode.prototype.constructor = ImportNode;
 
 // ---- ImportNode instance methods ----
-// Answer a data function (same as for WithNode)
+// Answer a data function (same as for WithNode) for applying an enter-update-exit pattern
 ImportNode.prototype.getDataFunction = WithNode.prototype.getDataFunction;
+
+// Answer the data function for regular usage (see explanation above)
+ImportNode.prototype.getRegularDataFunction = TemplateNode.prototype.getDataFunction;
 
 // Answer the actual child element (based on the specified root element)
 ImportNode.prototype.getChildElement = function(rootElement) {
-	return select(this.childElement.call(rootElement.node(), rootElement.datum(), 0, rootElement.nodes()));
+
+	// The childElement instance variable contains either the selection or a selector
+	var childElementOrSelector = this.childElement.call(rootElement.node(), rootElement.datum(), 0, rootElement.nodes());
+	return childElementOrSelector.selectAll ? childElementOrSelector : select(childElementOrSelector);
 };
 
 // Join data onto the receiver (using rootElement as base for selecting the DOM elements)
@@ -308,7 +320,7 @@ ImportNode.prototype.joinData = function(rootElement) {
 	// Handle element for element allowing each to have its own
 	// child element imported.
 	var self = this;
-	rootElement.each(function() {
+	this.resolveTemplateElements(rootElement).each(function() {
 		var element = select(this);
 		GroupingNode.prototype.joinData.call(self, element);
 	});
@@ -318,6 +330,7 @@ ImportNode.prototype.joinData = function(rootElement) {
 ImportNode.prototype.render = function(rootElement, transition) {
 
 	// Delegate the rendering to the child elements (the imported templates)
+	var self = this;
 	var templateElements = this.resolveTemplateElements(rootElement);
 	templateElements.select(function() { return this.firstElementChild; }).each(function() {
 		var element = select(this);
@@ -328,6 +341,6 @@ ImportNode.prototype.render = function(rootElement, transition) {
 		}
 
 		// Render the imported template
-		element.render(element.datum());
+		element.render(self.getRegularDataFunction());
 	});
 };

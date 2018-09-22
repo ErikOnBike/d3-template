@@ -1,7 +1,6 @@
 var tape = require("tape");
 var jsdom = require("./jsdom");
-var d3 = Object.assign({}, require("d3-selection"));
-require("../");
+var d3 = Object.assign({}, require("d3-selection"), require("../"));
 
 tape("render() group with only text", function(test) {
 	var document = jsdom("<div data-repeat='{{.}}'>{{.}}</div>");
