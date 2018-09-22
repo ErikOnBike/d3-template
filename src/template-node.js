@@ -4,7 +4,6 @@ import { TemplatePath } from "./template-path";
 // Constants
 var ELEMENT_BOUNDARY_ATTRIBUTE = "data-d3t7b";
 var BOOLEAN_ATTRIBUTE_VALUE = "1";	// Smallest (somewhat meaningful) thruthy string value
-var EVENT_HANDLERS = "__on";		// Defined in D3 see https://github.com/d3/d3-selection/blob/master/src/selection/on.js
 var ALL_DIRECT_CHILDREN = function() { return this.children; };
 
 // ---- TemplateNode class ----
@@ -32,17 +31,23 @@ TemplateNode.templateSelector = function(element) {
 	return TemplatePath.selector(element);
 };
 
-// Copy specified data onto all children of the template node (recursively)
-TemplateNode.copyDataToChildren = function(data, element) {
-	element.selectAll(ALL_DIRECT_CHILDREN).each(function() {
-		var childElement = select(this);
-		childElement.datum(data);
+// Copy specified data onto all children of the DOM node (recursively)
+// Parameter data is optional. If not supplied the node's data is used.
+TemplateNode.copyDataToChildren = function(node, data) {
 
-		// Copy data to children as long as there is no (node) boundary
-		if(!childElement.attr(ELEMENT_BOUNDARY_ATTRIBUTE)) {
-			TemplateNode.copyDataToChildren(data, childElement);
+	// Retrieve data from node if no data is supplied
+	if(arguments.length < 2) {
+		data = node.__data__;
+	}
+
+	// Set data to children and their children recursively
+	var children = node.children;
+	for(var i = 0; i < children.length; i++) {
+		children[i].__data__ = data;
+		if(!children[i].hasAttribute(ELEMENT_BOUNDARY_ATTRIBUTE)) {
+			TemplateNode.copyDataToChildren(children[i], data);
 		}
-	});
+	}
 };
 
 // ---- TemplateNode instance methods ----
@@ -65,8 +70,8 @@ TemplateNode.prototype.addRenderer = function(renderer) {
 // The data is already present at the specified root element (ie at rootElement.datum())
 TemplateNode.prototype.joinData = function(rootElement) {
 
-	// Copy data to children (data is already present in rootElement)
-	TemplateNode.copyDataToChildren(rootElement.datum(), rootElement);
+	// Copy data to children (data is already present in rootElement so don't provide it here)
+	TemplateNode.copyDataToChildren(rootElement.node());
 
 	// Join data for the child nodes
 	this.childNodes.forEach(function(childNode) {
@@ -172,9 +177,9 @@ GroupingNode.prototype.joinData = function(rootElement) {
 	// Update data of children (both new and updated)
 	var updatedElements = newElements.merge(joinedElements);
 	updatedElements.each(function() {
-		var updatedElement = select(this);
-		var data = updatedElement.datum();	// Elements receive data in root by enter/append above
-		TemplateNode.copyDataToChildren(data, updatedElement);
+
+		// Elements receive data in root by enter/append above so don't provide data
+		TemplateNode.copyDataToChildren(this);
 	});
 
 	// Create additional child elements on newly created childs
@@ -189,7 +194,8 @@ GroupingNode.prototype.joinData = function(rootElement) {
 GroupingNode.prototype.storeEventHandlers = function(element) {
 
 	// Add event handlers for element
-	var eventHandlers = element.node()[EVENT_HANDLERS];
+	// Defined in D3 see https://github.com/d3/d3-selection/blob/master/src/selection/on.js
+	var eventHandlers = element.node().__on;
 	if(eventHandlers && eventHandlers.length > 0) {
 		this.storedEventHandlers.push({
 			templatePath: new TemplatePath(element),
