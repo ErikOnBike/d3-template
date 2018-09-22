@@ -88,9 +88,6 @@ var SVG_CAMEL_CASE_ATTRS = {};	// Combined SVG 1.1 and SVG 2 (draft 14 feb 2018)
 });
 
 
-// Globals
-var templates = {};
-
 // Main functions
 
 // Create template from receiver (this method will be added to the d3 selection prototype)
@@ -117,9 +114,8 @@ export function template(selection, options) {
 		// Add renderers so template can be rendered when data is provided
 		template.addNodesAndRenderers(rootElement, rootNode);
 
-		// Store template 
-		var templateSelector = TemplateNode.templateSelector(rootElement);
-		templates[templateSelector] = template;
+		// Store template in DOM node
+		this.__d3t7__ = template;
 	});
 
 	return selection;
@@ -139,13 +135,9 @@ export function render(selectionOrTransition, data) {
 		var element = select(this);
 
 		// Retrieve template for element
-		var templateSelector = TemplateNode.templateSelector(element);
-		if(!templateSelector) {
-			throw new Error("Method render() called on non-template selection.");
-		}
-		var template = templates[templateSelector];
+		var template = this.__d3t7__;
 		if(!template) {
-			throw new Error("Method render() called on element within template selection instead of template selection itself.");
+			throw new Error("Method render() called on non-template selection.");
 		}
 
 		// Join data and render template

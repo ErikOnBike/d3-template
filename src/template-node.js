@@ -136,6 +136,7 @@ GroupingNode.prototype.joinData = function(rootElement) {
 	if(childElement.size() === 0) {
 		return;
 	}
+	var childNode = childElement.node();
 
 	// Join data onto DOM
 	var joinedElements = this.resolveTemplateElements(rootElement)
@@ -148,9 +149,13 @@ GroupingNode.prototype.joinData = function(rootElement) {
 		.enter()
 			.append(function() {
 
-				// Return a clone of the child element (removing its id for uniqueness)
-				var clonedNode = childElement.node().cloneNode(true);
+				// Return a clone of the child element
+				// (removing its id for uniqueness and copying template if applicable)
+				var clonedNode = childNode.cloneNode(true);
 				clonedNode.removeAttribute("id");
+				if(childNode.__d3t7__) {
+					clonedNode.__d3t7__ = childNode.__d3t7__;
+				}
 				return clonedNode;
 			})
 	;
