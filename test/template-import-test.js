@@ -108,3 +108,14 @@ tape("import combined with if", function(test) {
 	test.throws(function() { selection.template() }, /A repeat or if grouping can't be combined with import on the same element./, "The element combines if and import");
 	test.end();
 });
+
+tape("import with comment as child", function(test) {
+	global.document = jsdom("<body><div id='component' class='component'><span>Hello</span></div><div id='template'><div data-import='{{.|format: \"#component\"}}'><!-- Comment here --></div></div></body>");
+	var importNode = document.querySelector("#component");
+	d3.select(importNode).template();
+	var node = document.querySelector("#template");
+	var selection = d3.select(node);
+	selection.template().render(null);
+	test.equal(selection.select(".component span").text(), "Hello", "import includes child nodes");
+	test.end();
+});
