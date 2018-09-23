@@ -37,7 +37,7 @@ TemplatePath.generateUniqueSelector = function(element) {
 	if(!selectorId) {
 
 		// Add new id and set template class
-		selectorId = "_" + selectorIdCounter.toString(36) + "_";
+		selectorId = selectorIdCounter.toString(36);
 		selectorIdCounter++;
 		element.attr(ELEMENT_SELECTOR_ATTRIBUTE, selectorId);
 	}

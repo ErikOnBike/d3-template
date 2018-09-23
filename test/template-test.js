@@ -16,7 +16,7 @@ tape("template() identifies root element containing template-field", function(te
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template();
-	test.assert(selection.attr("data-d3t7s").match(/^_[0-9a-zA-Z]+_$/), "Root element gets template-id '_<alphanumeric>_'");
+	test.assert(selection.attr("data-d3t7s").match(/^[0-9a-zA-Z]+$/), "Root element gets template-id '<alphanumeric>'");
 	test.assert(selection.attr("data-d3t7s"), "Root element gets marked as template");
 	test.end();
 });
@@ -37,7 +37,7 @@ tape("template() identifies child element containing template-field in attribute
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template();
-	test.assert(selection.select("span").attr("data-d3t7s").match(/^_[0-9a-zA-Z]+_$/), "Child element gets template-id '_<alphanumeric>_'");
+	test.assert(selection.select("span").attr("data-d3t7s").match(/^[0-9a-zA-Z]+$/), "Child element gets template-id '<alphanumeric>'");
 	test.assert(selection.select("span").attr("data-d3t7s"), "Child element gets marked as template");
 	test.equal(selection.selectAll("[data-d3t7s]").size(), 1, "Only 1 child identified");
 	test.end();
@@ -48,7 +48,7 @@ tape("template() identifies child element containing template-field in text", fu
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template();
-	test.assert(selection.select("b").attr("data-d3t7s").match(/^_[0-9a-zA-Z]+_$/), "Parent element of text node gets template-id '_<alphanumeric>_'");
+	test.assert(selection.select("b").attr("data-d3t7s").match(/^[0-9a-zA-Z]+$/), "Parent element of text node gets template-id '<alphanumeric>'");
 	test.assert(selection.select("b").attr("data-d3t7s"), "Parent element of text node gets marked as template");
 	test.equal(selection.selectAll("[data-d3t7s]").size(), 1, "Only 1 child identified");
 	test.end();
