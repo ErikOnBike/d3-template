@@ -3,7 +3,7 @@ var jsdom = require("./jsdom");
 var d3 = Object.assign({}, require("d3-selection"), require("../"));
 
 tape("render() empty repeat", function(test) {
-	var document = jsdom("<div data-repeat='{{.}}'></div>");
+	var document = jsdom("<div data-repeat='{{d}}'></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	var data = [ "hello", "world", "!" ];
@@ -14,7 +14,7 @@ tape("render() empty repeat", function(test) {
 });
 
 tape("render() repeat array with literal values", function(test) {
-	var document = jsdom("<div data-repeat='{{.}}'><div>{{.}}</div></div>");
+	var document = jsdom("<div data-repeat='{{d}}'><div>{{d}}</div></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	var data = [ "hello", "world", "!" ];
@@ -28,7 +28,7 @@ tape("render() repeat array with literal values", function(test) {
 });
 
 tape("render() repeat array with object values", function(test) {
-	var document = jsdom("<div data-repeat='{{.}}'><div data-style-color='{{color}}'>{{text}}</div></div>");
+	var document = jsdom("<div data-repeat='{{d}}'><div data-style-color='{{d.color}}'>{{d.text}}</div></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	var data = [
@@ -48,7 +48,7 @@ tape("render() repeat array with object values", function(test) {
 });
 
 tape("render() repeat array with object values render twice", function(test) {
-	var document = jsdom("<div><span>{{title}}</span><div><div class='testable'><div data-repeat='{{words}}'><div class='word'><span class='dutch'>{{dutch}}</span> - <span class='english'>{{english}}</span> <span data-repeat='{{icons}}'><span><span class='icon'><span>{{.}}</span></span></span></span></div></div></div></div></div>");
+	var document = jsdom("<div><span>{{d.title}}</span><div><div class='testable'><div data-repeat='{{d.words}}'><div class='word'><span class='dutch'>{{d.dutch}}</span> - <span class='english'>{{d.english}}</span> <span data-repeat='{{d.icons}}'><span><span class='icon'><span>{{d}}</span></span></span></span></div></div></div></div></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template();
@@ -110,7 +110,7 @@ tape("render() repeat array with object values render twice", function(test) {
 });
 
 tape("render() repeat array with object values and event handlers on nested child", function(test) {
-	var document = jsdom("<div data-repeat='{{.}}'><div><span>{{.}}</span></div></div>");
+	var document = jsdom("<div data-repeat='{{d}}'><div><span>{{d}}</span></div></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	// Add event handler (before creating template)
@@ -131,7 +131,7 @@ tape("render() repeat array with object values and event handlers on nested chil
 });
 
 tape("render() repeat array with object values containing arrays", function(test) {
-	var document = jsdom("<table><tbody  data-repeat='{{matrix}}'><tr data-repeat='{{row}}'><td data-value='{{value}}'>{{content}}</td></tr></tbody></table>");
+	var document = jsdom("<table><tbody  data-repeat='{{d.matrix}}'><tr data-repeat='{{d.row}}'><td data-value='{{d.value}}'>{{d.content}}</td></tr></tbody></table>");
 	var node = document.querySelector("table");
 	var selection = d3.select(node);
 	var data = {
@@ -196,7 +196,7 @@ tape("render() repeat array with object values containing arrays", function(test
 });
 
 tape("render() repeat array with special array selectors", function(test) {
-	var document = jsdom("<div data-repeat='{{.}}'><div data-index='{{.|repeatIndex}}' data-position='{{.|repeatPosition}}' data-length='{{.|repeatLength}}'>{{.}}</div></div>");
+	var document = jsdom("<div data-repeat='{{d}}'><div data-index='{{i}}' data-position='{{i+1}}' data-length='{{nodes.length}}'>{{d}}</div></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	var data = [ "hello", "world", "!" ];
@@ -214,7 +214,7 @@ tape("render() repeat array with special array selectors", function(test) {
 });
 
 tape("render() repeat array with special repeat group filters in nested arrays", function(test) {
-	var document = jsdom("<div data-repeat='{{.}}'><div><div class='x' data-index='{{.|repeatIndex}}' data-position='{{.|repeatPosition}}' data-length='{{.|repeatLength}}' data-repeat='{{.}}'><span data-index='{{.|repeatIndex}}' data-position='{{.|repeatPosition}}' data-length='{{.|repeatLength}}'>{{.}}</span></div></div></div>");
+	var document = jsdom("<div data-repeat='{{d}}'><div><div class='x' data-index='{{i}}' data-position='{{i+1}}' data-length='{{nodes.length}}' data-repeat='{{d}}'><span data-index='{{i}}' data-position='{{i+1}}' data-length='{{nodes.length}}'>{{d}}</span></div></div></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	var data = [
@@ -245,7 +245,7 @@ tape("render() repeat array with special repeat group filters in nested arrays",
 });
 
 tape("render() special repeat group filters without array", function(test) {
-	var document = jsdom("<div data-value='{{.|repeatIndex}}'>hello</div>");
+	var document = jsdom("<div data-value='{{i}}'>hello</div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	var data = "hello world";
@@ -255,7 +255,7 @@ tape("render() special repeat group filters without array", function(test) {
 });
 
 tape("render() repeat array with format filter", function(test) {
-	var document = jsdom("<div data-repeat='{{.}}'><div><span>{{.|format: \"Index: {.|repeatIndex} is {.}\"}}</span></div></div>");
+	var document = jsdom("<div data-repeat='{{d}}'><div><span>{{`Index: ${i} is ${d}`}}</span></div></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	var data = [ "hello", "world", "!" ];

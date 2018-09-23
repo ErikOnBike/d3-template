@@ -3,7 +3,7 @@ var jsdom = require("./jsdom");
 var d3 = Object.assign({}, require("d3-selection"), require("../"));
 
 tape("render() if with literal values", function(test) {
-	var document = jsdom("<div data-if='{{.}}'><span>hello world</span></div>");
+	var document = jsdom("<div data-if='{{d}}'><span>hello world</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template().render(true);
@@ -18,7 +18,7 @@ tape("render() if with literal values", function(test) {
 });
 
 tape("render() if with object values", function(test) {
-	var document = jsdom("<div data-if='{{show}}'><span>{{message}}</span></div>");
+	var document = jsdom("<div data-if='{{d.show}}'><span>{{d.message}}</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	var data = { show: true, message: "Hello" };
@@ -40,7 +40,7 @@ tape("render() if with object values", function(test) {
 });
 
 tape("render() if with object values within repeat", function(test) {
-	var document = jsdom("<div data-repeat='{{.}}'><div data-if='{{show}}'><span>{{message}}</span></div></div>");
+	var document = jsdom("<div data-repeat='{{d}}'><div data-if='{{d.show}}'><span>{{d.message}}</span></div></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	var data = [ { show: true, message: "hello" }, { show: false, message: "bye" }, { show: 1, message: "world" } ];
@@ -51,9 +51,9 @@ tape("render() if with object values within repeat", function(test) {
 });
 
 tape("render() if test fix for missing 'this'", function(test) {
-	d3.renderFilter("testFix", function(d, i) { return d3.select(node).selectAll("div").nodes().indexOf(this) === i ? d : "error"; });
-	var document = jsdom("<div data-repeat='{{.}}'><div data-if='{{show|testFix}}'><span>{{message}}</span></div></div>");
+	var document = jsdom("<div data-repeat='{{d}}'><div data-if='{{d3.select(node).selectAll(\"div\").nodes().indexOf(this) === i ? d.show : \"error\"}}'><span>{{d.message}}</span></div></div>");
 	var node = document.querySelector("div");
+	global.node = node;
 	var selection = d3.select(node);
 	var data = [ { show: true, message: "hello" }, { show: false, message: "bye" }, { show: 1, message: "world" } ];
 	selection.template().render(data);

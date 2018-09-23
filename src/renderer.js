@@ -1,34 +1,6 @@
 import { select } from "d3-selection";
 import { TemplatePath } from "./template-path";
 
-// Globals
-export var namedRenderFilters = {};
-
-// Main function
-export function renderFilter(name, filterFunc) {
-	return renderFilterPrivate(name, filterFunc, false);
-}
-
-export function renderTweenFilter(name, tweenFilterFunc) {
-	return renderFilterPrivate(name, tweenFilterFunc, true);
-}
-
-function renderFilterPrivate(name, filterFunc, isTweenFilter) {
-	if(filterFunc === null) {
-		delete namedRenderFilters[name];
-	} else if(filterFunc === undefined) {
-		return namedRenderFilters[name];
-	} else {
-		if(typeof filterFunc !== "function") {
-			throw new Error("No function specified when registering renderFilter: " + name);
-		}
-		if(isTweenFilter) {
-			filterFunc.isTweenFunction = true;
-		}
-		namedRenderFilters[name] = filterFunc;
-	}
-}
-
 // Renderer - Renders data on element
 function Renderer(element, dataFunction) {
 	this.templatePath = new TemplatePath(element);

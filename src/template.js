@@ -1,7 +1,6 @@
 import { select } from "d3-selection";
 import { TemplateNode, RepeatNode, IfNode, WithNode, ImportNode } from "./template-node";
-import { FieldParser } from "./field-parser";
-import { namedRenderFilters, AttributeRenderer, StyleRenderer, PropertyRenderer, TextRenderer } from "./renderer";
+import { AttributeRenderer, StyleRenderer, PropertyRenderer, TextRenderer } from "./renderer";
 
 // ---- Defaults ----
 var defaults = {
@@ -164,7 +163,7 @@ export function render(selectionOrTransition, data) {
 }
 
 // ---- Template class ----
-export function Template(rootNode, options) {
+function Template(rootNode, options) {
 	this.rootNode = rootNode;
 	this.options = options;
 }
@@ -205,67 +204,50 @@ Template.getAttributesFor = function(element) {
 	return attributes;
 };
 
-// Answer a new data function based on the specified field selector and optional filter(s)
-var fieldParser = new FieldParser();
-Template.createDataFunction = function(fieldSelectorAndFilters) {
+// Answer a data function based on the specified expression
+Template.createDataFunction = function(expression) {
 
-	// Temporary code follows
-	if(fieldSelectorAndFilters.fieldSelectors) {
-
-		var parsedField = fieldSelectorAndFilters;
-		var fieldSelectors = parsedField.fieldSelectors;
-		var filterReferences = parsedField.filterReferences;
-
-		// Create initial value function
-		var initialValueFunction = function(d) {
-			return fieldSelectors.reduce(function(text, selector) {
-				return text !== undefined && text !== null ? text[selector] : text;
-			}, d);
-		};
-
-		// Decide if data function is tweenable (depends on last filter applied)
-		var isTweenFunction = false;
-		var lastFilterReference = filterReferences.length > 0 ? filterReferences[filterReferences.length - 1] : null;
-		if(lastFilterReference) {
-			var filter = namedRenderFilters[lastFilterReference.name];
-			if(filter && filter.isTweenFunction) {
-				isTweenFunction = true;
-			}
-		}
-
-		// Create data function based on filters and initial value
-		var dataFunction = function(d, i, nodes) {
-			var node = this;
-			return filterReferences.reduce(function(d, filterReference) {
-				var filter = namedRenderFilters[filterReference.name];
-				if(filter) {
-					var args = filterReference.args.slice(0);
-
-					// Prepend d
-					args.splice(0, 0, d);
-
-					// Append i and nodes
-					args.push(i, nodes);
-					return filter.apply(node, args);
-				}
-				return d;
-			}, initialValueFunction(d, i, nodes));
-		};
-		dataFunction.isTweenFunction = isTweenFunction;
-
-		return dataFunction;
-	} else {
-		// Parse field selector and (optional) filters
-		var parseResult = fieldParser.parse(fieldSelectorAndFilters);
-		if(parseResult.value === undefined) {
-			throw new SyntaxError("Failed to parse field selector and/or filter <" + fieldSelectorAndFilters + "> @ " + parseResult.index + ": " + parseResult.errorCode);
-		} else if(parseResult.index !== fieldSelectorAndFilters.length) {
-			throw new SyntaxError("Failed to parse field selector and/or filter <" + fieldSelectorAndFilters + "> @ " + parseResult.index + ": EXTRA_CHARACTERS");
-		}
-
-		// Recursive call (only temporary here)
-		return Template.createDataFunction(parseResult.value);
+	// Check tags for data function
+	var isTweenFunction = false;
+	var isSafeFunction = false;
+	if(expression.startsWith("tween:")) {
+		isTweenFunction = true;
+		expression = expression.slice(6).trim();
+	} else if(expression.startsWith("safe:")) {
+		isSafeFunction = true;
+		expression = expression.slice(5).trim();
 	}
+
+	// Create data function
+	var dataFunction;
+	try {
+		var functionBody = isSafeFunction ?
+			"try{return " + expression.trim() + "}catch(e){return null}" :
+			"return " + expression.trim()
+		;
+		dataFunction = new Function("d", "i", "nodes", functionBody);
+	} catch(e) {
+		throw new Error("Invalid expression \"" + expression + "\". Error: " + e.message);
+	}
+
+	// Add tween indicator (if applicable)
+	if(isTweenFunction) {
+		dataFunction.isTweenFunction = true;
+	}
+
+	return dataFunction;
+};
+
+// Answer a tweening data function based on the specified expression
+Template.createTweenDataFunction = function(expression) {
+	var dataFunction = Template.createNewDataFunction(expression);
+	dataFunction.isTweenFunction = true;
+	return dataFunction;
+};
+
+// Answer a safe data function (one accepting exceptions being thrown) based on the specified expression
+Template.createSafeDataFunction = function(expression) {
+	return Template.createNewDataFunction(expression, true);
 };
 
 // ---- Template instance methods ----
@@ -349,7 +331,7 @@ Template.prototype.addGroupingNodes = function(element, parentNode) {
 
 		// Set groupings to only contain the import grouping
 		importGrouping.importSelector = importGrouping.match[1];
-		importGrouping.match = withGrouping.match ? withGrouping.match : [ "{{.}}", "." ];
+		importGrouping.match = withGrouping.match ? withGrouping.match : [ "{{d}}", "d" ];
 		groupings = [ importGrouping ];
 	}
 

@@ -3,7 +3,7 @@ var jsdom = require("./jsdom");
 var d3 = Object.assign({}, require("d3-selection"), require("../"));
 
 tape("render() attribute through data-attribute with literal value", function(test) {
-	var document = jsdom("<div data-attr-id='{{.}}'></div>");
+	var document = jsdom("<div data-attr-id='{{d}}'></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template().render(123);
@@ -13,7 +13,7 @@ tape("render() attribute through data-attribute with literal value", function(te
 });
 
 tape("render() attribute through data-attribute with object value", function(test) {
-	var document = jsdom("<div><span data-attr-cx='{{cx}}' data-attr-cy='{{cy}}' r='10'></span></div>");
+	var document = jsdom("<div><span data-attr-cx='{{d.cx}}' data-attr-cy='{{d.cy}}' r='10'></span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template().render({ cx: 100, cy: 50 });
@@ -24,7 +24,7 @@ tape("render() attribute through data-attribute with object value", function(tes
 });
 
 tape("render() attribute through data-attribute replacing class", function(test) {
-	var document = jsdom("<div class='original' data-attr-class='{{.}}'>Hello world</div>");
+	var document = jsdom("<div class='original' data-attr-class='{{d}}'>Hello world</div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	test.equal(selection.attr("class"), "original", "Original class present");
@@ -34,7 +34,7 @@ tape("render() attribute through data-attribute replacing class", function(test)
 });
 
 tape("render() camelcase SVG attributes", function(test) {
-	var document = jsdom("<svg data-attr-viewbox='{{.}}'></div>");
+	var document = jsdom("<svg data-attr-viewbox='{{d}}'></div>");
 	var node = document.querySelector("svg");
 	var selection = d3.select(node);
 	selection.template().render("0,0,100,100");
@@ -43,7 +43,7 @@ tape("render() camelcase SVG attributes", function(test) {
 });
 
 tape("render() attribute through custom attribute with literal value", function(test) {
-	var document = jsdom("<div attr-id='{{.}}'></div>");
+	var document = jsdom("<div attr-id='{{d}}'></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template({ indirectAttributePrefix: "attr-" }).render(123);

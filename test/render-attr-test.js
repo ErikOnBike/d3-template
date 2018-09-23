@@ -3,7 +3,7 @@ var jsdom = require("./jsdom");
 var d3 = Object.assign({}, require("d3-selection"), require("../"));
 
 tape("render() attribute on root element", function(test) {
-	var document = jsdom("<div data-value='{{field}}'></div>");
+	var document = jsdom("<div data-value='{{d.field}}'></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template().render({ field: "test123" });
@@ -12,7 +12,7 @@ tape("render() attribute on root element", function(test) {
 });
 
 tape("render() attribute on child element", function(test) {
-	var document = jsdom("<div><span data-value='{{field}}'>Some text here</span></div>");
+	var document = jsdom("<div><span data-value='{{d.field}}'>Some text here</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template().render({ field: "test321" });
@@ -21,7 +21,7 @@ tape("render() attribute on child element", function(test) {
 });
 
 tape("render() attribute on root and child element", function(test) {
-	var document = jsdom("<div data-value-on-root='{{field}}'><span data-value='{{field}}'>Some text here</span></div>");
+	var document = jsdom("<div data-value-on-root='{{d.field}}'><span data-value='{{d.field}}'>Some text here</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template().render({ field: "test333" });
@@ -31,7 +31,7 @@ tape("render() attribute on root and child element", function(test) {
 });
 
 tape("render() attribute rendered multiple times on root and child element", function(test) {
-	var document = jsdom("<div data-value-first='{{field}}' second='{{field}}'><span data-value-third='{{field}}' fourth='{{field}}' fifth='{{field}}'>Some text here</span></div>");
+	var document = jsdom("<div data-value-first='{{d.field}}' second='{{d.field}}'><span data-value-third='{{d.field}}' fourth='{{d.field}}' fifth='{{d.field}}'>Some text here</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template().render({ field: "test many" });
@@ -44,7 +44,7 @@ tape("render() attribute rendered multiple times on root and child element", fun
 });
 
 tape("render() attribute rendered with literal numeric value", function(test) {
-	var document = jsdom("<div><span data-value='{{.}}'>Some text here</span></div>");
+	var document = jsdom("<div><span data-value='{{d}}'>Some text here</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template().render(123);
@@ -53,7 +53,7 @@ tape("render() attribute rendered with literal numeric value", function(test) {
 });
 
 tape("render() attribute rendered with literal string value", function(test) {
-	var document = jsdom("<div><span data-value='{{.}}'>Some text here</span></div>");
+	var document = jsdom("<div><span data-value='{{d}}'>Some text here</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template().render("Hello world");
@@ -62,7 +62,7 @@ tape("render() attribute rendered with literal string value", function(test) {
 });
 
 tape("render() attribute rendered with literal boolean value", function(test) {
-	var document = jsdom("<div><span data-value='{{.}}'>Some text here</span></div>");
+	var document = jsdom("<div><span data-value='{{d}}'>Some text here</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template().render(true);
@@ -71,7 +71,7 @@ tape("render() attribute rendered with literal boolean value", function(test) {
 });
 
 tape("render() attribute rendered with null value", function(test) {
-	var document = jsdom("<div><span data-value='{{.}}'>Some text here</span></div>");
+	var document = jsdom("<div><span data-value='{{d}}'>Some text here</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template().render(null);
@@ -80,16 +80,7 @@ tape("render() attribute rendered with null value", function(test) {
 });
 
 tape("render() attribute rendered with nested object value", function(test) {
-	var document = jsdom("<div><span data-value='{{person.name.first}}'>Some text here</span></div>");
-	var node = document.querySelector("div");
-	var selection = d3.select(node);
-	selection.template().render({ person: { interests: [ "some", "code", "development" ], name: { last: "Stel", first: "Erik" } } });
-	test.equal(selection.select("span").attr("data-value"), "Erik", "First name attribute value is rendered");
-	test.end();
-});
-
-tape("render() attribute rendered with nested object value with quoted fields", function(test) {
-	var document = jsdom("<div><span data-value='{{\"person\".name.\"first\"}}'>Some text here</span></div>");
+	var document = jsdom("<div><span data-value='{{d.person.name.first}}'>Some text here</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template().render({ person: { interests: [ "some", "code", "development" ], name: { last: "Stel", first: "Erik" } } });
@@ -98,24 +89,15 @@ tape("render() attribute rendered with nested object value with quoted fields", 
 });
 
 tape("render() attribute rendered with nested object value with missing fields", function(test) {
-	var document = jsdom("<div><span data-value='{{person.name.first}}'>Some text here</span></div>");
+	var document = jsdom("<div><span data-value='{{d.person.name.first}}'>Some text here</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
-	selection.template().render({ person: { interests: [ "some", "code", "development" ] } });
-	test.equal(selection.select("span").attr("data-value"), null, "Non-existing field removes rendering");
-	test.end();
-});
-
-tape("render() attribute rendered with nested object value with error in fields", function(test) {
-	var document = jsdom("<div><span data-value='{{\"person.name.first}}'>Some text here</span></div>");
-	var node = document.querySelector("div");
-	var selection = d3.select(node);
-	test.throws(function() { selection.template(); }, /INVALID_STRING/, "Illegal field (missing quotes)");
+	test.throws(function() { selection.template().render({ person: { interests: [ "some", "code", "development" ] } }); }, /Cannot read property/, "Missing field");
 	test.end();
 });
 
 tape("render() attribute with namespace", function(test) {
-	var document = jsdom("<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xyz=\"http://www.w3.org/1999/xlink\"><use xlink:data-attr-href='{{id|prefix: \"#\"}}'></use></svg>");
+	var document = jsdom("<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xyz=\"http://www.w3.org/1999/xlink\"><use xlink:data-attr-href='{{\"#\" + d.id}}'></use></svg>");
 	var node = document.querySelector("svg");
 	var selection = d3.select(node);
 	selection.template().render({ id: "ref_id" });
@@ -124,8 +106,8 @@ tape("render() attribute with namespace", function(test) {
 	test.end();
 });
 
-tape("render() attribute with filter", function(test) {
-	var document = jsdom("<div><span data-value='{{.|upper}}' data-value2='{{.|substr: 2, 2}}'>Some text here</span></div>");
+tape("render() attribute with functions/filters", function(test) {
+	var document = jsdom("<div><span data-value='{{d.toUpperCase()}}' data-value2='{{d.substr(2, 2)}}'>Some text here</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template().render("Hello");
@@ -135,7 +117,7 @@ tape("render() attribute with filter", function(test) {
 });
 
 tape("render() attribute with multiple filters", function(test) {
-	var document = jsdom("<div><span data-value='{{.|upper|prefix: \"x\"|postfix: \"y\"}}'>Some text here</span></div>");
+	var document = jsdom("<div><span data-value='{{\"x\" + d.toUpperCase() + \"y\"}}'>Some text here</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template().render("Hello");
@@ -143,59 +125,11 @@ tape("render() attribute with multiple filters", function(test) {
 	test.end();
 });
 
-tape("render() attribute with illegal filter", function(test) {
-	var document = jsdom("<div><span data-value='{{.|postfix: X}}'>Some text here</span></div>");
-	var node = document.querySelector("div");
-	var selection = d3.select(node);
-	test.throws(function() { selection.template(); }, /MISSING_VALUE/, "Illegal argument (missing quotes)");
-	test.end();
-});
-
-tape("render() attribute with illegal filter", function(test) {
-	var document = jsdom("<div><span data-value='{{|. postfix: X}}'>Some text here</span></div>");
-	var node = document.querySelector("div");
-	var selection = d3.select(node);
-	test.throws(function() { selection.template(); }, /MISSING_VALID_FIELD_SELECTOR/, "Illegal argument (missing quotes)");
-	test.end();
-});
-
-tape("render() attribute with illegal filter", function(test) {
-	var document = jsdom("<div><span data-value='{{.|upper lower}}'>Some text here</span></div>");
-	var node = document.querySelector("div");
-	var selection = d3.select(node);
-	test.throws(function() { selection.template(); }, /EXTRA_CHARACTERS/, "Illegal argument (exta characters)");
-	test.end();
-});
-
-tape("render() attribute with unknown filter", function(test) {
-	var document = jsdom("<div><span data-value='{{.|supersonic}}'>Some text here</span></div>");
-	var node = document.querySelector("div");
-	var selection = d3.select(node);
-	selection.template().render("hello");
-	test.equal(selection.select("span").attr("data-value"), "hello", "Unknown filter has no effect.");
-	test.end();
-});
-
 tape("render() non-group with filter using i, nodes", function(test) {
-	var document = jsdom("<div><span data-value='{{.|extraParams}}'>Some text here</span></div>");
+	var document = jsdom("<div><span data-value='{{(function(d,i, nodes) {return d + \",\" + i + \",\" + nodes.length;})(d,i,nodes)}}'>Some text here</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
-	d3.renderFilter("extraParams", function(d, i, nodes) {
-		return d + "," + i + "," + nodes.length;
-	});
 	selection.template().render("hello");
 	test.equal(selection.select("span").attr("data-value"), "hello,0,1", "Filter on non-group gives i and nodes.");
-	test.end();
-});
-
-tape("render() non-group with filter using i, nodes", function(test) {
-	var document = jsdom("<div><span data-value='{{.|extraParams: { \"a\": 1, \"b\": 2, \"c\": [ 1, 2 ] }}}'>Some text here</span></div>");
-	var node = document.querySelector("div");
-	var selection = d3.select(node);
-	d3.renderFilter("extraParams", function(d, obj) {
-		return d + JSON.stringify(obj);
-	});
-	selection.template().render("hello");
-	test.equal(selection.select("span").attr("data-value"), "hello{\"a\":1,\"b\":2,\"c\":[1,2]}", "Filter with object.");
 	test.end();
 });

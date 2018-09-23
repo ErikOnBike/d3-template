@@ -6,7 +6,7 @@ var jsdom = require("./jsdom");
 var d3 = Object.assign({}, require("d3-selection"), require("d3-transition"), require("../"));
 
 tape("render() attribute with transition", function(test) {
-	var document = jsdom("<div data-value='{{.}}' data-hardcoded='1'></div>");
+	var document = jsdom("<div data-value='{{d}}' data-hardcoded='1'></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection
@@ -36,7 +36,7 @@ tape("render() attribute with transition", function(test) {
 });
 
 tape("render() style with transition", function(test) {
-	var document = jsdom("<div data-style-height='{{.|unit: \"px\"}}' style='width:1px'></div>");
+	var document = jsdom("<div data-style-height='{{d + \"px\"}}' style='width:1px'></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection
@@ -66,7 +66,7 @@ tape("render() style with transition", function(test) {
 });
 
 tape("render() text with transition", function(test) {
-	var document = jsdom("<div>{{.}}</div>");
+	var document = jsdom("<div>{{d}}</div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection
@@ -92,7 +92,7 @@ tape("render() text with transition", function(test) {
 });
 
 tape("render() attribute within repeating group with transition", function(test) {
-	var document = jsdom("<div data-repeat='{{.}}'><div data-value='{{.}}' data-hardcoded='100'></div></div>");
+	var document = jsdom("<div data-repeat='{{d}}'><div data-value='{{d}}' data-hardcoded='100'></div></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	var count = 0;

@@ -12,7 +12,7 @@ tape("template() is available on selections and as regular function", function(t
 });
 	
 tape("template() identifies root element containing template-field", function(test) {
-	var document = jsdom("<div data-value='{{field}}'></div>");
+	var document = jsdom("<div data-value='{{d.field}}'></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template();
@@ -33,7 +33,7 @@ tape("template() only identifies root and elements containing template-field", f
 });
 
 tape("template() identifies child element containing template-field in attribute", function(test) {
-	var document = jsdom("<div><span data-value='{{field}}'></span></div>");
+	var document = jsdom("<div><span data-value='{{d.field}}'></span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template();
@@ -44,7 +44,7 @@ tape("template() identifies child element containing template-field in attribute
 });
 
 tape("template() identifies child element containing template-field in text", function(test) {
-	var document = jsdom("<div><span><b>{{field}}</b></span></div>");
+	var document = jsdom("<div><span><b>{{d.field}}</b></span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template();
@@ -55,7 +55,7 @@ tape("template() identifies child element containing template-field in text", fu
 });
 
 tape("template({ ... }) identifies elements with default class (if no custom values specified)", function(test) {
-	var document = jsdom("<div><span><b>{{field}}</b></span></div>");
+	var document = jsdom("<div><span><b>{{d.field}}</b></span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template({ some: "template-marker", orOther: "value" });
@@ -64,20 +64,8 @@ tape("template({ ... }) identifies elements with default class (if no custom val
 	test.end();
 });
 
-/* Currently a fixed selector is in use.
-tape("template({ elementSelectorAttribute: 'xyz', ... }) identifies elements with custom selector attribute name", function(test) {
-	var document = jsdom("<div><span><b>{{field}}</b></span></div>");
-	var node = document.querySelector("div");
-	var selection = d3.select(node);
-	selection.template({ elementSelectorAttribute: "template-selector" });
-	test.assert(selection.select("b").attr("template-selector") !== null, "Custom selector applied on identified element");
-	test.assert(selection.select("b").attr("data-d3t7s") === null, "Default selector not applied on identified element");
-	test.end();
-});
-*/
-
 tape("template({ repeatAttribute: 'xyz', ... }) identifies elements with custom repeat attribute name", function(test) {
-	var document = jsdom("<div><ul for='{{field}}'><li>{{.}}</li></ul></div>");
+	var document = jsdom("<div><ul for='{{d.field}}'><li>{{d}}</li></ul></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template({ repeatAttribute: "for" });
@@ -88,7 +76,7 @@ tape("template({ repeatAttribute: 'xyz', ... }) identifies elements with custom 
 });
 
 tape("template({ ifAttribute: 'xyz', ... }) identifies elements with custom if attribute name", function(test) {
-	var document = jsdom("<div><span if='{{isAvailable}}'><span>{{text}}</span></span></div>");
+	var document = jsdom("<div><span if='{{d.isAvailable}}'><span>{{d.text}}</span></span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template({ ifAttribute: "if" });
@@ -99,7 +87,7 @@ tape("template({ ifAttribute: 'xyz', ... }) identifies elements with custom if a
 });
 
 tape("template({ withAttribute: 'xyz', ... }) identifies elements with custom with attribute name", function(test) {
-	var document = jsdom("<div><span with='{{scopedElement}}'><span>{{text}}</span></span></div>");
+	var document = jsdom("<div><span with='{{d.scopedElement}}'><span>{{d.text}}</span></span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template({ withAttribute: "with" });

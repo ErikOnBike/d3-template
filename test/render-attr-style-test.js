@@ -3,7 +3,7 @@ var jsdom = require("./jsdom");
 var d3 = Object.assign({}, require("d3-selection"), require("../"));
 
 tape("render() style through data-attribute with literal value", function(test) {
-	var document = jsdom("<div data-style-width='{{.}}'></div>");
+	var document = jsdom("<div data-style-width='{{d}}'></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template().render("600px");
@@ -13,7 +13,7 @@ tape("render() style through data-attribute with literal value", function(test) 
 });
 
 tape("render() style through data-attribute with object value", function(test) {
-	var document = jsdom("<div><span data-style-font-weight='{{font.weight}}'>Hello world</span></div>");
+	var document = jsdom("<div><span data-style-font-weight='{{d.font.weight}}'>Hello world</span></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template().render({ font: { name: 'Times', size: 10, weight: 600 } });
@@ -22,7 +22,7 @@ tape("render() style through data-attribute with object value", function(test) {
 });
 
 tape("render() style through custom attribute with literal value", function(test) {
-	var document = jsdom("<div style-width='{{.}}'></div>");
+	var document = jsdom("<div style-width='{{d}}'></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template({ indirectStylePrefix: "style-" }).render("600px");

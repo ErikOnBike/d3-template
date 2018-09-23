@@ -3,7 +3,7 @@ var jsdom = require("./jsdom");
 var d3 = Object.assign({}, require("d3-selection"), require("../"));
 
 tape("render() is available on selections and as regular function", function(test) {
-	var document = jsdom("<body>{{.}}</body>");
+	var document = jsdom("<body>{{d}}</body>");
 	var node = document.querySelector("body");
 	var selection = d3.select(node);
 	selection.template();
@@ -27,7 +27,7 @@ tape("render() fails on non template selection", function(test) {
 });
 
 tape("render() adds data to elements", function(test) {
-	var document = jsdom("<form class='person'><div class='name'><input name='first-name' data-attr-value='{{name.first}}' type='text'><input name='last-name' data-attr-value='{{name.last'}}' type='text'></div><input name='birthdate' data-attr-value='{{birthdate}}' type='date'></form>");
+	var document = jsdom("<form class='person'><div class='name'><input name='first-name' data-attr-value='{{d.name.first}}' type='text'><input name='last-name' data-attr-value='{{d.name.last'}}' type='text'></div><input name='birthdate' data-attr-value='{{d.birthdate}}' type='date'></form>");
 	var node = document.querySelector("form");
 	var selection = d3.select(node);
 	selection.template();
@@ -42,7 +42,7 @@ tape("render() adds data to elements", function(test) {
 });
 
 tape("render() with combined objects", function(test) {
-	var document = jsdom("<div data-value1='{{value1}}' data-value2='{{value2}}' data-value3='{{value3}}' data-value4='{{value4}}'></div>");
+	var document = jsdom("<div data-value1='{{d.value1}}' data-value2='{{d.value2}}' data-value3='{{d.value3}}' data-value4='{{d.value4}}'></div>");
 	var node = document.querySelector("div");
 	var selection = d3.select(node);
 	selection.template();
