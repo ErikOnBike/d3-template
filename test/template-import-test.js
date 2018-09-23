@@ -16,6 +16,31 @@ tape("import another template", function(test) {
 	test.end();
 });
 
+tape("import another template using data", function(test) {
+	global.document = jsdom("<body><div id='hello'><span>{{message}}</span></div><div id='template'><div data-import='{{importId}}'></div></div></body>");
+	d3.select(document.querySelector("#hello")).template();
+	var node = document.querySelector("#template");
+	var selection = d3.select(node);
+	selection.template().render({ importId: "#hello", message: "Hello world!" });
+	test.equal(selection.select("div span").text(), "Hello world!", "import includes correct child node");
+	selection.template().render({ importId: "#hello", message: "See you next time!" });
+	test.equal(selection.select("div span").text(), "See you next time!", "import includes correct child node");
+	test.end();
+});
+
+tape("dynamically import another template", function(test) {
+	global.document = jsdom("<body><div id='hello'><span>Hello</span></div><div id='bye'><span>Bye</span></div><div id='template'><div data-import='{{importId}}'></div></div></body>");
+	d3.select(document.querySelector("#hello")).template();
+	d3.select(document.querySelector("#bye")).template();
+	var node = document.querySelector("#template");
+	var selection = d3.select(node);
+	selection.template().render({ importId: "#hello" });
+	test.equal(selection.select("div span").text(), "Hello", "import includes correct child node");
+	selection.template().render({ importId: "#bye" });
+	test.equal(selection.select("div span").text(), "Bye", "import includes correct child node");
+	test.end();
+});
+
 tape("import another template within repeat", function(test) {
 	global.document = jsdom("<body><div id='component'><span>{{message}}</span></div><div id='template'><div data-repeat='{{.}}'><div data-import='{{.|format: \"#component\"}}'></div></div></div></body>");
 	var importNode = document.querySelector("#component");

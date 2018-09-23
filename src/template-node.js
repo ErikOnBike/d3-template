@@ -128,15 +128,29 @@ GroupingNode.prototype.getChildElement = function(/* rootElement */) {
 // Join data onto the receiver (using rootElement as base for selecting the DOM elements)
 GroupingNode.prototype.joinData = function(rootElement) {
 
-	// Sanity check
+	// Retrieve child element and handle (imported) templates specifically
 	var childElement = this.getChildElement(rootElement);
+	var childNode = childElement.node();
+	var templateElements = this.resolveTemplateElements(rootElement);
+	if(childNode && childNode.__d3t7__) {
+
+		// This is import of template. If imported template has
+		// changed, remove current children and create new template.
+		var currentChildNode = templateElements.node();
+		if(currentChildNode.firstElementChild && currentChildNode.firstElementChild.__d3t7__) {
+			if(childNode.__d3t7__ !== currentChildNode.firstElementChild.__d3t7__) {
+				currentChildNode.removeChild(currentChildNode.firstElementChild);
+			}
+		}
+	}
+
+	// Sanity check
 	if(childElement.size() === 0) {
 		return;
 	}
-	var childNode = childElement.node();
 
 	// Join data onto DOM
-	var joinedElements = this.resolveTemplateElements(rootElement)
+	var joinedElements = templateElements
 		.selectAll(ALL_DIRECT_CHILDREN)
 			.data(this.getDataFunction())
 	;
@@ -150,7 +164,7 @@ GroupingNode.prototype.joinData = function(rootElement) {
 				// (removing its id for uniqueness and copying template if applicable)
 				var clonedNode = childNode.cloneNode(true);
 				clonedNode.removeAttribute("id");
-				if(childNode.__d3t7__ && childNode.__d3t7__.render) {
+				if(childNode.__d3t7__) {
 					clonedNode.__d3t7__ = childNode.__d3t7__;
 				}
 				return clonedNode;
