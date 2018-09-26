@@ -3,6 +3,8 @@ var jsdom = require("./jsdom");
 var d3 = Object.assign({}, require("d3-selection"), require("d3-transition"), require("d3-interpolate"), require("../"));
 global.d3 = d3;
 
+var DURATION = 200;
+
 tape("render() tween function without transition", function(test) {
 	var document = jsdom("<div data-style-color='{{tween:d3.interpolateRgb(\"white\", d.color)}}' data-attr-title='{{tween:textTween(d.text)}}'><span>{{tween:textTween(d.text)}}</span></div>");
 	var node = document.querySelector("div");
@@ -36,7 +38,7 @@ tape("render() tween function with transition", function(test) {
 	selection
 		.template()
 		.transition()
-			.duration(1000)
+			.duration(DURATION)
 			.on("start", function() {
 				var transition = d3.active(this);
 				transition.render({ color: "blue", text: "Hello world", prop: "My value" });
@@ -44,7 +46,7 @@ tape("render() tween function with transition", function(test) {
 	;
 
 	// Repeatedly check if values are rendered
-	var endTime = Date.now() + 1000;
+	var endTime = Date.now() + DURATION;
 	var timer = setInterval(function() {
 		if(Date.now() > endTime) {
 			clearInterval(timer);
@@ -58,7 +60,7 @@ tape("render() tween function with transition", function(test) {
 		test.equal(selection.attr("title"), text.substr(0, Math.floor(t * text.length)), "Attribute is rendered on element");
 		test.equal(selection.text(), text.substr(0, Math.floor(t * text.length)), "Text is rendered on element");
 		test.equal(selection.property("value"), prop.substr(0, Math.floor(t * prop.length)), "Property is rendered on element");
-	}, 100);
+	}, DURATION / 8);
 });
 
 tape("render() property through data-property with literal value using tween function but without transition", function(test) {

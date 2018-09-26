@@ -1,9 +1,8 @@
 var tape = require("tape");
-tape("tween temporary removed", function(test) {
-	test.end();
-});
 var jsdom = require("./jsdom");
 var d3 = Object.assign({}, require("d3-selection"), require("d3-transition"), require("../"));
+
+var DURATION = 200;
 
 tape("render() attribute with transition", function(test) {
 	var document = jsdom("<div data-value='{{d}}' data-hardcoded='1'></div>");
@@ -13,7 +12,7 @@ tape("render() attribute with transition", function(test) {
 		.template()
 		.render(1)
 		.transition()
-			.duration(1000)
+			.duration(DURATION)
 			.attr("data-hardcoded", 100)
 			.on("start", function() {
 
@@ -24,7 +23,7 @@ tape("render() attribute with transition", function(test) {
 	;
 
 	// Repeatedly check if rendered and hardcoded value are the same
-	var endTime = Date.now() + 1000;
+	var endTime = Date.now() + DURATION;
 	var timer = setInterval(function() {
 		if(Date.now() > endTime) {
 			clearInterval(timer);
@@ -32,7 +31,7 @@ tape("render() attribute with transition", function(test) {
 			return;
 		}
 		test.equal(selection.attr("data-value"), selection.attr("data-hardcoded"), "Transitioned attributes are the same");
-	}, 100);
+	}, DURATION / 8);
 });
 
 tape("render() style with transition", function(test) {
@@ -43,7 +42,7 @@ tape("render() style with transition", function(test) {
 		.template()
 		.render(1)
 		.transition()
-			.duration(1000)
+			.duration(DURATION)
 			.style("width", "100px")
 			.on("start", function() {
 
@@ -54,7 +53,7 @@ tape("render() style with transition", function(test) {
 	;
 
 	// Repeatedly check if rendered and hardcoded value are the same
-	var endTime = Date.now() + 1000;
+	var endTime = Date.now() + DURATION;
 	var timer = setInterval(function() {
 		if(Date.now() > endTime) {
 			clearInterval(timer);
@@ -100,7 +99,7 @@ tape("render() attribute within repeating group with transition", function(test)
 		.template()
 		.render([ 100, 100, 100 ])
 		.transition()
-			.duration(1000)
+			.duration(DURATION)
 			.on("start", function() {
 
 				// Render object 'on' current transition
@@ -114,7 +113,7 @@ tape("render() attribute within repeating group with transition", function(test)
 	;
 
 	// Repeatedly check if rendered and hardcoded value are the same
-	var endTime = Date.now() + 1000;
+	var endTime = Date.now() + DURATION;
 	var timer = setInterval(function() {
 		if(Date.now() > endTime) {
 			clearInterval(timer);
