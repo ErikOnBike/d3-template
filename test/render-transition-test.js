@@ -4,10 +4,9 @@ var d3 = Object.assign({}, require("d3-selection"), require("d3-transition"), re
 
 var DURATION = 200;
 
-tape("render() attribute with transition", function(test) {
-	var document = jsdom("<div data-value='{{d}}' data-hardcoded='1'></div>");
-	var node = document.querySelector("div");
-	var selection = d3.select(node);
+tape("render transition: render attribute with transition", function(test) {
+	global.document = jsdom("<div data-value='{{d}}' data-hardcoded='1'></div>");
+	var selection = d3.select("div");
 	selection
 		.template()
 		.render(1)
@@ -34,10 +33,9 @@ tape("render() attribute with transition", function(test) {
 	}, DURATION / 8);
 });
 
-tape("render() style with transition", function(test) {
-	var document = jsdom("<div data-style-height='{{d + \"px\"}}' style='width:1px'></div>");
-	var node = document.querySelector("div");
-	var selection = d3.select(node);
+tape("render transition: render style with transition", function(test) {
+	global.document = jsdom("<div data-style-height='{{d + \"px\"}}' style='width:1px'></div>");
+	var selection = d3.select("div");
 	selection
 		.template()
 		.render(1)
@@ -61,13 +59,12 @@ tape("render() style with transition", function(test) {
 			return;
 		}
 		test.equal(selection.style("width"), selection.style("height"), "Transitioned styles are the same");
-	}, 100);
+	}, DURATION / 8);
 });
 
-tape("render() text with transition", function(test) {
-	var document = jsdom("<div>{{d}}</div>");
-	var node = document.querySelector("div");
-	var selection = d3.select(node);
+tape("render transition: render text with transition", function(test) {
+	global.document = jsdom("<div>{{d}}</div>");
+	var selection = d3.select("div");
 	selection
 		.template()
 		.render("")
@@ -90,10 +87,9 @@ tape("render() text with transition", function(test) {
 	test.end();
 });
 
-tape("render() attribute within repeating group with transition", function(test) {
-	var document = jsdom("<div data-repeat='{{d}}'><div data-value='{{d}}' data-hardcoded='100'></div></div>");
-	var node = document.querySelector("div");
-	var selection = d3.select(node);
+tape("render transition: render attribute within repeating group with transition", function(test) {
+	global.document = jsdom("<div data-repeat='{{d}}'><div data-value='{{d}}' data-hardcoded='100'></div></div>");
+	var selection = d3.select("div");
 	var count = 0;
 	selection
 		.template()
@@ -102,7 +98,7 @@ tape("render() attribute within repeating group with transition", function(test)
 			.duration(DURATION)
 			.on("start", function() {
 
-				// Render object 'on' current transition
+				// Render object 'on' current transition (countdown to 0 or 1)
 				// BEWARE: a single element is 'off' by 1 and will not be equal to the hardcoded value!
 				var transition = d3.active(this);
 				transition.render([ 0, 1, 0 ]);
@@ -131,5 +127,5 @@ tape("render() attribute within repeating group with transition", function(test)
 				test.notEqual(element.attr("data-value"), element.attr("data-hardcoded"), "Transitioned attributes are the same");
 			}
 		});
-	}, 100);
+	}, DURATION / 8);
 });

@@ -1,19 +1,18 @@
 var tape = require("tape");
 var jsdom = require("./jsdom");
 var d3 = Object.assign({}, require("d3-selection"), require("d3-transition"), require("d3-interpolate"), require("../"));
-global.d3 = d3;
 
 var DURATION = 200;
 
-tape("render() tween function without transition", function(test) {
-	var document = jsdom("<div data-style-color='{{tween:d3.interpolateRgb(\"white\", d.color)}}' data-attr-title='{{tween:textTween(d.text)}}'><span>{{tween:textTween(d.text)}}</span></div>");
-	var node = document.querySelector("div");
-	var selection = d3.select(node);
+tape("render tween: render tween function without transition", function(test) {
+	global.d3 = d3;
 	global.textTween = function(d) {
 		return function(t) {
 			return d.substr(0, Math.floor(t * d.length));
 		};
 	};
+	global.document = jsdom("<div data-style-color='{{tween:d3.interpolateRgb(\"white\", d.color)}}' data-attr-title='{{tween:textTween(d.text)}}'><span>{{tween:textTween(d.text)}}</span></div>");
+	var selection = d3.select("div");
 	selection.template().render({ color: "blue", text: "Hello world" });
 	test.equal(selection.style("color"), "rgb(0, 0, 255)", "Style 'color' is rendered on element");
 	test.equal(selection.attr("title"), "Hello world", "Attribute is rendered on element");
@@ -21,20 +20,15 @@ tape("render() tween function without transition", function(test) {
 	test.end();
 });
 
-tape("render() tween function with transition", function(test) {
-	var document = jsdom("<div data-style-color='{{tween:d3.interpolateRgb(\"white\", d.color)}}' data-attr-title='{{tween:textTween(d.text)}}' data-prop-value='{{tween:propTween(d.prop)}}' data-t='{{tween:function(t) { return t; }}}'><span>{{tween:textTween(d.text)}}</span></div>");
-	var node = document.querySelector("div");
-	var selection = d3.select(node);
+tape("render tween: render tween function with transition", function(test) {
+	global.d3 = d3;
 	global.textTween = function(d) {
 		return function(t) {
 			return d.substr(0, Math.floor(t * d.length));
 		};
 	};
-	global.propTween = function(d) {
-		return function(t) {
-			return d.substr(0, Math.floor(t * d.length));
-		};
-	};
+	global.document = jsdom("<div data-style-color='{{tween:d3.interpolateRgb(\"white\", d.color)}}' data-attr-title='{{tween:textTween(d.text)}}' data-prop-value='{{tween:textTween(d.prop)}}' data-t='{{tween:function(t) { return t; }}}'><span>{{tween:textTween(d.text)}}</span></div>");
+	var selection = d3.select("div");
 	selection
 		.template()
 		.transition()
@@ -53,6 +47,8 @@ tape("render() tween function with transition", function(test) {
 			test.end();
 			return;
 		}
+
+		// Attribute "data-t" contains the current t (time) value
 		var t = +selection.attr("data-t");
 		var text = "Hello world";
 		var prop = "My value";
@@ -63,10 +59,9 @@ tape("render() tween function with transition", function(test) {
 	}, DURATION / 8);
 });
 
-tape("render() property through data-property with literal value using tween function but without transition", function(test) {
-	var document = jsdom("<input type='text' data-prop-value='{{tween:function(t) { return d.substr(0, Math.floor(t * d.length))}}}'></input>");
-	var node = document.querySelector("input");
-	var selection = d3.select(node);
+tape("render tween: render property with literal value using tween function but without transition", function(test) {
+	global.document = jsdom("<input type='text' data-prop-value='{{tween:function(t) { return d.substr(0, Math.floor(t * d.length))}}}'></input>");
+	var selection = d3.select("input");
 	selection.template().render("Hello world");
 	test.equal(selection.property("value"), "Hello world", "Property 'value' is rendered on element");
 	test.end();
