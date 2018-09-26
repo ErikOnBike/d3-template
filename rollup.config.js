@@ -10,10 +10,7 @@ export default {
     name: "d3",
     globals: {
       "d3-selection": "d3",
-      "d3-transition": "d3",
-      "d3-format": "d3",
-      "d3-time-format": "d3",
-      "d3-array": "d3"
+      "d3-transition": "d3"
     }
   },
   plugins: [
@@ -26,9 +23,6 @@ export default {
   ],
   external: [
     "d3-selection",
-    "d3-transition",
-    "d3-format",
-    "d3-time-format",
-    "d3-array"
+    "d3-transition"
   ]
 };
