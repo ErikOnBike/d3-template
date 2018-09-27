@@ -129,3 +129,33 @@ tape("render transition: render attribute within repeating group with transition
 		});
 	}, DURATION / 8);
 });
+
+tape("render transition: render style with transition on imported template", function(test) {
+	global.document = jsdom("<div id='component' data-style-height='{{d + \"px\"}}' style='width:1px'></div><div id='template' data-import='{{\"#component\"}}'></div>");
+	d3.select("#component").template();
+	var selection = d3.select("#template");
+	selection
+		.template()
+		.render(1)
+		.transition()
+			.duration(DURATION)
+			.on("start", function() {
+
+				// Render object 'on' current transition
+				var transition = d3.active(this);
+				transition.render(100);
+			})
+			.select("div").style("width", "100px")
+	;
+
+	// Repeatedly check if rendered and hardcoded value are the same
+	var endTime = Date.now() + DURATION;
+	var timer = setInterval(function() {
+		if(Date.now() > endTime) {
+			clearInterval(timer);
+			test.end();
+			return;
+		}
+		test.equal(selection.select("div").style("width"), selection.select("div").style("height"), "Transitioned styles are the same");
+	}, DURATION / 8);
+});

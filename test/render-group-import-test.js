@@ -2,8 +2,20 @@ var tape = require("tape");
 var jsdom = require("./jsdom");
 var d3 = Object.assign({}, require("d3-selection"), require("../"));
 
-tape("render group-import: import another template", function(test) {
+tape("render group-import: import another template by selector", function(test) {
 	global.document = jsdom("<body><div id='component' class='component'><span>Hello</span></div><div id='template'><div data-import='{{\"#component\"}}'></div></div></body>");
+	d3.select("#component").template();
+	var selection = d3.select("#template");
+	selection.template().render(null);
+	test.equal(selection.selectAll("div").size(), 2, "import added 1 more div (resulting in 2)");
+	test.equal(selection.select("div div").attr("id"), null, "id removed from imported template");
+	test.equal(selection.select(".component").size(), 1, "import added correct component");
+	test.equal(selection.select(".component span").text(), "Hello", "import includes child nodes");
+	test.end();
+});
+
+tape("render group-import: import another template directly", function(test) {
+	global.document = jsdom("<body><div id='component' class='component'><span>Hello</span></div><div id='template'><div data-import='{{d3.select(\"#component\")}}'></div></div></body>");
 	d3.select("#component").template();
 	var selection = d3.select("#template");
 	selection.template().render(null);
@@ -116,6 +128,13 @@ tape("render group-import: import combined with if", function(test) {
 	global.document = jsdom("<body><div id='component' class='component'><span>Hello</span></div><div id='template'><div data-if='{{d}}' data-import='{{\"#component\"}}'>  aaa  </div></div></body>");
 	var selection = d3.select("#template");
 	test.throws(function() { selection.template() }, /A repeat or if grouping can't be combined with import on the same element./, "The element combines if and import");
+	test.end();
+});
+
+tape("render group-import: import with child present", function(test) {
+	global.document = jsdom('<div data-import="{{d}}"><span>I should not be here</span></div>');
+	var selection = d3.select("div");
+	test.throws(function() { selection.template(); }, /No child elements allowed within an import grouping./, "No child elements allowed within import grouping");
 	test.end();
 });
 

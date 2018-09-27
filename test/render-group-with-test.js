@@ -19,7 +19,7 @@ tape("render group-with: render with-scope with object value", function(test) {
 });
 
 tape("render group-with: render with-scope with object value within repeat", function(test) {
-	global.document = jsdom("<div data-repeat='{{d}}'><div data-with='{{d.obj}}'><span>{{safe:d.value}}</span></div></div>");
+	global.document = jsdom("<div data-repeat='{{d}}'><div data-with='{{d.obj}}'><span>{{(function(d) { try{return d.value}catch(e){return null;}})(d)}}</span></div></div>");
 	var selection = d3.select("div");
 	selection.template().render([
 		{ obj: { notUsed: "here", someValue: "there", value: "hello" } },

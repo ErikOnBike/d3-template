@@ -87,3 +87,17 @@ tape("template: template identifies elements with custom with attribute name", f
 	test.equals(selection.select("span").text(), "", "Child element of group removed");
 	test.end();
 });
+
+tape("template: template fails on invalid expressions", function(test) {
+	global.document = jsdom('<div data-repeat="{{d +-* 3}}"><div>{{d}}</div></div>');
+	var selection = d3.select("div");
+	test.throws(function() { selection.template() }, /Invalid expression/, "Catch invalid expression");
+	test.end();
+});
+
+tape("template: template fail on overlap", function(test) {
+	global.document = jsdom('<div data-repeat="{{d}}"><div id="inner" data-if="{{d}}"><div>{{d}}</div></div></div>');
+	d3.select("#inner").template();
+	test.throws(function() { d3.select("div").template(); }, /Templates should not overlap\./, "Templates should not overlap");
+	test.end();
+});

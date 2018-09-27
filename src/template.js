@@ -209,22 +209,15 @@ Template.createDataFunction = function(expression) {
 
 	// Check tags for data function
 	var isTweenFunction = false;
-	var isSafeFunction = false;
 	if(expression.startsWith("tween:")) {
 		isTweenFunction = true;
 		expression = expression.slice(6).trim();
-	} else if(expression.startsWith("safe:")) {
-		isSafeFunction = true;
-		expression = expression.slice(5).trim();
 	}
 
 	// Create data function
 	var dataFunction;
 	try {
-		var functionBody = isSafeFunction ?
-			"try{return " + expression.trim() + "}catch(e){return null}" :
-			"return " + expression.trim()
-		;
+		var functionBody = "return " + expression.trim();
 		dataFunction = new Function("d", "i", "nodes", functionBody);
 	} catch(e) {
 		throw new Error("Invalid expression \"" + expression + "\". Error: " + e.message);
@@ -236,18 +229,6 @@ Template.createDataFunction = function(expression) {
 	}
 
 	return dataFunction;
-};
-
-// Answer a tweening data function based on the specified expression
-Template.createTweenDataFunction = function(expression) {
-	var dataFunction = Template.createNewDataFunction(expression);
-	dataFunction.isTweenFunction = true;
-	return dataFunction;
-};
-
-// Answer a safe data function (one accepting exceptions being thrown) based on the specified expression
-Template.createSafeDataFunction = function(expression) {
-	return Template.createNewDataFunction(expression, true);
 };
 
 // ---- Template instance methods ----
