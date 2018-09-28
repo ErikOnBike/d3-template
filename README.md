@@ -2,7 +2,7 @@
 
 *(This version is meant for V4/V5 and has not been tested on V3 or earlier versions of D3)*
 
-d3-template is a D3 plugin to support templates using D3's data binding mechanism.  This means you can use D3's familiar functionality directly on or with your templates. Apply transitions or add event handlers to template elements with access to the bound data. Render new data on a template thereby updating attributes, styles, properties and text. Also new elements are added and superfluous elements are removed from repeating groups (D3's enter/exit update pattern). This works for both HTML as well as SVG elements both in the Browser as well as within Node. Templates will normally be acting on the live DOM, but can be used on virtual DOM's (like [jsdom](https://github.com/jsdom/jsdom)) as well.
+d3-template is a D3 plugin to support templates using D3's data binding mechanism.  This means you can use D3's familiar functionality directly on or with your templates. Apply transitions or add event handlers to template elements with access to the bound data. Render new data on a template thereby updating attributes, styles, properties and text. Also new elements are added and superfluous elements are removed from repeating groups (D3's enter/exit update pattern). This works for both HTML as well as SVG elements both in the browser as well as within Node. Templates will normally be acting on the live DOM, but can be used on virtual DOM's (like [jsdom](https://github.com/jsdom/jsdom)) as well.
 
 If you are looking for existing templating support like Handlebars, Mustache or Nunjucks have a look at [d3-templating](https://github.com/jkutianski/d3-templating).
 
@@ -21,14 +21,14 @@ The following information is available:
 
 ## <a name="Usage">Usage</a>
 
-Templates look like they do in most other templating tools: add references to data by placing expressions within curly braces.
+Templates look like they do in most other templating tools: rendering data by placing expressions within curly braces into HTML or SVG elements. These expressions are data functions (as described in the [introduction](https://d3js.org/#properties) of the D3 homepage) but lack an explicit `return` statement. The standard arguments `d, i, nodes` are present and `this` is set to the (Template) node being rendered.
 
 The general usage is probably best described by an example (see example on [bl.ocks.org](https://bl.ocks.org/ErikOnBike/f36ce2b4c88ef525d0cfe34a766d8067)):
 
 ```HTML
-<div class="person">
+<div id="person">
     <div>
-        <span>Name: <span>{{d.name}}</span></span>
+        <span>{{`Name: ${d.name}`}}</span>
     </div>
     <div>
         <span>{{`Birthdate: ${d3.timeFormat("%-d %B %Y")(d.date)}`}}</span>
@@ -43,7 +43,7 @@ The general usage is probably best described by an example (see example on [bl.o
 <script>
 
     // Add event handler to list element before template creation
-    d3.select(".person ul li")
+    d3.select("#person ul li")
         .on("click", function(d, i, nodes) {
             // d will be entry from the honours.given array
             // i will be current index
@@ -56,7 +56,7 @@ The general usage is probably best described by an example (see example on [bl.o
     // Turn selection into a template
     // This will remove some elements from the DOM as well as add some attributes to elements
     // for identification.
-    d3.select(".person")
+    d3.select("#person")
         .template()
     ;
 
@@ -64,7 +64,7 @@ The general usage is probably best described by an example (see example on [bl.o
 
     // Render data onto earlier created template
     // Information retrieved from https://en.wikipedia.org/wiki/Alan_Turing#Awards,_honours,_recognition,_and_tributes
-    d3.select(".person")
+    d3.select("#person")
         .render({
             name: "Alan Turing",
             birthdate: new Date(1912, 5, 23),
@@ -93,11 +93,11 @@ The general usage is probably best described by an example (see example on [bl.o
 </script>
 ```
 
-When rendering data onto a template which is already rendered, the new data will be bound and elements will be updated accordingly. A transition can be created to animate the new data rendering.
+When rendering data onto a template which is already rendered, the new data will be bound and elements will be updated accordingly. A [transition](#Transitions) can be created to animate the new data rendering.
 
 ## <a name="Installing">Installing</a>
 
-To install via [NPM](https://www.npmjs.com) use `npm install d3-template-plugin`. Or use/install directly using [unpkg](https://unpkg.com/).
+To install via [npm](https://www.npmjs.com) use `npm install d3-template-plugin`. Or use/install directly using [unpkg](https://unpkg.com/).
 
     <script src="https://unpkg.com/d3-template-plugin/build/d3-template.min.js"></script>
 
@@ -107,20 +107,20 @@ The following *features* are present:
 * Data rendering onto attributes and text directly.
 * Data can also be rendered on attributes, styles or properties indirectly (through `data-attr-<name>`, `data-style-<name>` and `data-prop-<name>`). Properties can be useful for setting the `value` or `checked` property of HTML input elements for example. The indirect rendering is especially useful for SVG because most browsers do not like 'invalid' attribute values:
 
-    ```HTML
+    ```SVG
     <!-- Most browsers do not like this (invalid according to SVG spec) -->
     <circle cx="{{x}}" cy="{{y}}" r="{{radius}}"></circle>
 
-    <!-- Most browsers are okay with this (valid according to SVG spec) -->
+    <!-- Browsers are okay with this (valid according to SVG spec) -->
     <circle data-attr-cx="{{x}}" data-attr-cy="{{y}}" data-attr-r="{{radius}}"></circle>
     ```
 
-* Repeating and conditional groups (through `data-repeat` and `data-if` attribute).
+* [Repeating](#Repeating-groups) and conditional groups (through `data-repeat` and `data-if` attribute).
 * A scope group similar to the Javascript `with` statement (through `data-with` attribute).
-* Other templates can be imported. Which template gets imported can be decided on render time based on the bound data.
-* Possibility to overwrite the template attribute names with custom names. If for example `repeat`, `if` and `with` is preferred over de long names, this can be specified when creating a template. Although such custom attributes are not compliant with HTML5 or SVG specifications, most browsers will accept it without complaining.
-* Event handlers added onto elements before the template was created (using `selection.on()`), will be (re)applied when rendering the template.
-* Rendering can be done within a transition allowing animations.
+* Other templates can be [imported](#Import-templates). Which template gets imported can be decided on render time based on the bound data.
+* Possibility to overwrite the template attribute names with custom names. If for example `repeat`, `if` and `with` is preferred over de long names, this can be specified when creating a [template](#template). Although such custom attributes are not compliant with HTML5 or SVG specifications, most browsers will accept it without complaining.
+* [Event handlers](#Event-handlers) added onto elements before the template was created (using `selection.on()`), will be (re)applied when rendering the template.
+* Rendering can be done within a [transition](#Transitions) allowing animations.
 * Tweens (for attribute, style, property or text) can also be used in combination with a transition by providing a [tween data function](#tweenDataFunction).
 
 ## <a name="Limitations">Limitations</a>
@@ -170,7 +170,7 @@ The following known *limitations* are present:
 
     <!-- Use the following (or something similar) instead -->
     <div data-repeat="{{d.stats}}">
-        <span>{{`Requests: ${d.requests} (per month)`}}</span>
+        <div>{{`Requests: ${d.requests} (per month)`}}</div>
     </span>
     ```
 
@@ -268,7 +268,7 @@ To use the index or length of the repeat group, use the D3 typical `i` or `nodes
 
 ### <a name="Import-templates">Import templates</a>
 
-It is possible to import another template. The data bound to the element during rendering can be used to dynamically decide which template gets imported. An element with an import can not have children in the template (the imported template will be the child). An import can be combined with `with` grouping to scope (or map) the data onto the imported template.
+It is possible to import another template. The data bound to the element during rendering can be used to dynamically decide which template gets imported. The data function for the `data-import` attribute should answer either a (CSS) selector or a D3 selection. The element can not have children in the template (the imported template will render the child/children).
 
 ```HTML
 <div id="templates" style="display: none;">
@@ -311,6 +311,53 @@ It is possible to import another template. The data bound to the element during 
 </script>
 ```
 
+In the example above templates have an `id` attribute. According to the HTML/SVG specifications these should be unqiue. These `id` attributes will therefore not be present when the template is rendered on an import. Only the original template will have it.
+
+An import can be combined with `with` grouping to scope (or map) the data onto the imported template.
+
+```HTML
+<div id="#templates" style="display: none;">
+	<div id="person">
+		<dl>
+			<dt>Name</dt><dd>{{d.fullname}}</dd>
+			<dt>Email</dt><dd>{{d.email}}</dd>
+		</dl>
+	</div>
+</div>
+<div id="company">
+	<h1>{{d.name}}</h1>
+	<div class="list" data-repeat="{{d.employees}}">
+		<div data-import="{{'#person'}}" data-with="{{employeeToPerson(d)}}">
+			<!-- No child elements allowed here! -->
+		</div>
+	</div>
+</div>
+<script>
+	// Function to convert employee to person
+	function employeeToPerson(employee) {
+		return {
+			fullname: employee.firstname + " " + employee.lastname,
+			email: employee.workEmail
+		};
+	}
+
+	// Create template (for importing)
+	d3.select("#person").template();
+
+	// Create template and render data
+	d3.select("#company")
+		.template()
+		.render({
+			name: "Some company",
+			employees: [
+				{ firstname: "Alan", lastname: "Turing", workEmail: "alan@some.com", privateEmail: "alan.turing@gmail.com" },
+				{ firstname: "Alan", lastname: "Kay", workEmail: "alan2@some.com", privateEmail: "alan.kay@yahoo.com" },
+				{ firstname: "Bret", lastname: "Victor", workEmail: "bret@some.com", privateEmail: "bret.victor@hotmail.com" }
+			] 
+		})
+	;
+```
+
 ### <a name="Transitions">Transitions</a>
 
 Transitions can be combined with rendering data onto a template. This allows for example SVG diagrams to transition from one shape to another. The general approach for rendering on a transition is the following:
@@ -323,6 +370,8 @@ selection
 	.render(data)
 ;
 ```
+
+#### <a name="tweenDataFunction">Tween data function</a>
 
 Some data like text or strings do not animate well. Also sometimes a bit more control is needed on the way data is transitioned. In D3 there are tween functions for that. In d3-template these can be created by tagging a data function with the tag 'tween'.
 
