@@ -227,15 +227,12 @@ selection.call(d3.render, data);
 
 <a name="transition_render" href="#transition_render">#</a> <i>transition</i>.<b>render</b>(<i>data</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L140)
 
-To render data onto a selection using a transition use the following:
+Renders *data* onto this *transition*. The following are all equivalent:
 
 ```Javascript
-selection
-    .transition()
-        .delay(100)
-        .duration(600)
-        .render(data)
-;
+d3.render(transition, data);
+transition.render(data);
+transition.call(d3.render, data);
 ```
 
 ### <a name="Repeating-groups">Repeating groups</a>
@@ -287,7 +284,9 @@ It is possible to import another template. The data bound to the element during 
 </div>
 <div id="messenger">
 	<div class="list" data-repeat="{{d}}">
-		<div data-import="{{d.sender === 'Me' ? '#outgoing-message' : '#incoming-message'}}"></div>
+		<div data-import="{{d.sender === 'Me' ? '#outgoing-message' : '#incoming-message'}}">
+			<!-- No child elements allowed here! -->
+		</div>
 	</div>
 </div>
 <script>
