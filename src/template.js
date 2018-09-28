@@ -131,9 +131,18 @@ export function template(selection, options) {
 	return selection;
 }
 
-// Render data on receiver (ie, a selection or transition since this method will be added to the d3 selection and transition prototypes)
+// Render data on selection
 export function selection_render(data) {
 	return render(this, data);
+}
+
+// Render data on transition
+export function transition_render(data) {
+	var self = this;
+	this.on("start.d3t7", function() {
+		render(self, data);
+	});
+	return this;
 }
 
 // Render data on specified selection (selection should consist of a template)

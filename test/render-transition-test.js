@@ -13,12 +13,7 @@ tape("render transition: render attribute with transition", function(test) {
 		.transition()
 			.duration(DURATION)
 			.attr("data-hardcoded", 100)
-			.on("start", function() {
-
-				// Render object 'on' current transition
-				var transition = d3.active(this);
-				transition.render(100);
-			})
+			.render(100)
 	;
 
 	// Repeatedly check if rendered and hardcoded value are the same
@@ -42,12 +37,7 @@ tape("render transition: render style with transition", function(test) {
 		.transition()
 			.duration(DURATION)
 			.style("width", "100px")
-			.on("start", function() {
-
-				// Render object 'on' current transition
-				var transition = d3.active(this);
-				transition.render(100);
-			})
+			.render(100)
 	;
 
 	// Repeatedly check if rendered and hardcoded value are the same
@@ -71,12 +61,7 @@ tape("render transition: render text with transition", function(test) {
 		.transition()
 			.delay(100)
 			.duration(100)
-			.on("start", function() {
-
-				// Render object 'on' current transition
-				var transition = d3.active(this);
-				transition.render("hello");
-			})
+			.render("hello")
 	;
 
 	// Check value before transition and shortly after start
@@ -90,20 +75,12 @@ tape("render transition: render text with transition", function(test) {
 tape("render transition: render attribute within repeating group with transition", function(test) {
 	global.document = jsdom("<div data-repeat='{{d}}'><div data-value='{{d}}' data-hardcoded='100'></div></div>");
 	var selection = d3.select("div");
-	var count = 0;
 	selection
 		.template()
 		.render([ 100, 100, 100 ])
 		.transition()
 			.duration(DURATION)
-			.on("start", function() {
-
-				// Render object 'on' current transition (countdown to 0 or 1)
-				// BEWARE: a single element is 'off' by 1 and will not be equal to the hardcoded value!
-				var transition = d3.active(this);
-				transition.render([ 0, 1, 0 ]);
-				count++;
-			})
+			.render([0, 1, 0])
 			.selectAll("div")
 				.attr("data-hardcoded", 0)
 	;
@@ -113,7 +90,6 @@ tape("render transition: render attribute within repeating group with transition
 	var timer = setInterval(function() {
 		if(Date.now() > endTime) {
 			clearInterval(timer);
-			test.equal(count, 1, "Single transition start received");
 			test.end();
 			return;
 		}
@@ -139,12 +115,7 @@ tape("render transition: render style with transition on imported template", fun
 		.render(1)
 		.transition()
 			.duration(DURATION)
-			.on("start", function() {
-
-				// Render object 'on' current transition
-				var transition = d3.active(this);
-				transition.render(100);
-			})
+			.render(100)
 			.select("div").style("width", "100px")
 	;
 

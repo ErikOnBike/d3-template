@@ -33,10 +33,7 @@ tape("render tween: render tween function with transition", function(test) {
 		.template()
 		.transition()
 			.duration(DURATION)
-			.on("start", function() {
-				var transition = d3.active(this);
-				transition.render({ color: "blue", text: "Hello world", prop: "My value" });
-			})
+			.render({ color: "blue", text: "Hello world", prop: "My value" })
 	;
 
 	// Repeatedly check if values are rendered
