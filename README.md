@@ -2,6 +2,8 @@
 
 *(This version is meant for V4/V5 and has not been tested on V3 or earlier versions of D3)*
 
+This is version 2 of d3-template. If you have used version 1 before, please check out the [explanation](#History).
+
 d3-template is a D3 plugin to support templates using D3's data binding mechanism.  This means you can use D3's familiar functionality directly on or with your templates. Apply transitions or add event handlers to template elements with access to the bound data. Render new data on a template thereby updating attributes, styles, properties and text. Also new elements are added and superfluous elements are removed from repeating groups (D3's enter/exit update pattern). This works for both HTML as well as SVG elements both in the browser as well as within Node. Templates will normally be acting on the live DOM, but can be used on virtual DOM's (like [jsdom](https://github.com/jsdom/jsdom)) as well.
 
 If you are looking for existing templating support like Handlebars, Mustache or Nunjucks have a look at [d3-templating](https://github.com/jkutianski/d3-templating).
@@ -16,6 +18,7 @@ The following information is available:
 * [Import templates](#Import-templates)
 * [Transitions](#Transitions)
 * [Event handlers](#Event-handlers)
+* [History](#History)
 * [Examples](examples/README.md)
 * [License](LICENSE)
 
@@ -431,3 +434,7 @@ If event handlers are applied to a selection before a template is being created 
     // Clicking on a list element will show the alert specified 
 </script>
 ```
+
+### <a name="History">History</a>
+
+d3-template was created because I wanted to remove some of the burden of having to create each and every DOM element in my enter/exit update code. It seems to fullfill this job for me. For version 1 I had in mind that I would add additional tooling which would create my data structures based on my templates. Work the other way around so to say. This did not work out as I expected. So with version 2 I decided to drop the approach where the template expressions are fields (and filters). Beginning with version 2 template expressions are Javascript expressions with parameters `d, i, nodes` defined as in D3 data functions. Version 1 code will break on the version 2 plugin. Sorry for any inconvenience. I think the new expressions are eassier to debug and have a higher expressiveness.
