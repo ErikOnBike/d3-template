@@ -14,10 +14,12 @@ The following information is available:
 * [Features](#Features)
 * [Limitations](#Limitations)
 * [API Reference](#API-Reference)
-* [Repeating groups](#Repeating-groups)
-* [Import templates](#Import-templates)
-* [Transitions](#Transitions)
-* [Event handlers](#Event-handlers)
+* [Details](#Details)
+    * [Repeating groups](#Repeating-groups)
+    * [If groups](#If-groups)
+    * [Import templates](#Import-templates)
+    * [Transitions](#Transitions)
+    * [Event handlers](#Event-handlers)
 * [History](#History)
 * [Examples](examples/README.md)
 * [License](LICENSE)
@@ -235,6 +237,8 @@ transition.render(data);
 transition.call(d3.render, data);
 ```
 
+## <a name="Details">Details</a>
+
 ### <a name="Repeating-groups">Repeating groups</a>
 
 Repeating groups can only be used with arrays as data. The array will be bound to the element when rendered. The group's child element will be appended conform the regular D3 enter/exit pattern. A copy of the child element will be rendered for every array element provided. It will have the corresponding array element bound as data.
@@ -265,6 +269,23 @@ To use the index or length of the repeat group, use the D3 typical `i` or `nodes
     <li data-index="{{i}}"><span>{{`${i + 1} of ${nodes.length}`}}</span> - <span>{{d}}</span></li>
 </ul>
 ```
+
+### <a name="If-groups">If groups</a>
+
+If groups are conditional elements within a template. It allows a child element to be rendered (or not) based on a condition. If the condition expression evaluaties to a thruthy value, the child is rendered. Otherwise no child will be rendered (an existing child will be removed).
+
+```HTML
+<div data-if="{{d.employees.length > 0}}">
+    <div data-repeat="{{d.employees}}">
+        <div>...</div>
+    </div>
+</div>
+<div data-if="{{d.employees.length === 0}}">
+    <div>There are no employees in this company.</div>
+</div>
+```
+
+As can be seen in the example above, there is no `else` clause for if groups.
 
 ### <a name="Import-templates">Import templates</a>
 
@@ -434,6 +455,6 @@ If event handlers are applied to a selection before a template is being created 
 </script>
 ```
 
-### <a name="History">History</a>
+## <a name="History">History</a>
 
 d3-template was created to remove some of the burden of having to create each and every DOM element when applying the enter/exit update pattern. For version 1 additional tooling was foreseen which would create data structures based on the templates. Work the other way around so to say. This did not work out as expected and adding the much needed filters did not help. So with version 2 the approach where the template expressions are fields (and filters) is dropped. Beginning with version 2 template expressions are Javascript expressions with parameters `d, i, nodes` defined as in D3 data functions. Version 1 code will break on the version 2 plugin. Sorry for any inconvenience. The new expressions should have a higher expressiveness and should be eassier to debug. As with version 1: hopefully this is a useful plugin for you.
