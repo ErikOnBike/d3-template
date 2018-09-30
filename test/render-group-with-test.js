@@ -1,30 +1,26 @@
 var tape = require("tape");
 var jsdom = require("./jsdom");
-var d3 = Object.assign({}, require("d3-selection"));
-require("../");
+var d3 = Object.assign({}, require("d3-selection"), require("../"));
 
-tape("render() with-scope with literal value", function(test) {
-	var document = jsdom("<div data-with='{{.}}'><span>{{.}}</span></div>");
-	var node = document.querySelector("div");
-	var selection = d3.select(node);
+tape("render group-with: render with-scope with literal value", function(test) {
+	global.document = jsdom("<div data-with='{{d}}'><span>{{d}}</span></div>");
+	var selection = d3.select("div");
 	selection.template().render("Hello world");
-	test.equal(selection.text(), "Hello world", "With scope on {.} renders itself");
+	test.equal(selection.text(), "Hello world", "With scope on 'd' renders itself");
 	test.end();
 });
 
-tape("render() with-scope with object value", function(test) {
-	var document = jsdom("<div data-with='{{obj}}'><span>{{value}}</span></div>");
-	var node = document.querySelector("div");
-	var selection = d3.select(node);
+tape("render group-with: render with-scope with object value", function(test) {
+	global.document = jsdom("<div data-with='{{d.obj}}'><span>{{d.value}}</span></div>");
+	var selection = d3.select("div");
 	selection.template().render({ obj: { notUsed: "here", someValue: "there", value: "everywhere" } });
 	test.equal(selection.text(), "everywhere", "With scope renders referred instance");
 	test.end();
 });
 
-tape("render() with-scope with object value within repeat", function(test) {
-	var document = jsdom("<div data-repeat='{{.}}'><div data-with='{{obj}}'><span>{{value}}</span></div></div>");
-	var node = document.querySelector("div");
-	var selection = d3.select(node);
+tape("render group-with: render with-scope with object value within repeat", function(test) {
+	global.document = jsdom("<div data-repeat='{{d}}'><div data-with='{{d.obj}}'><span>{{(function(d) { try{return d.value}catch(e){return null;}})(d)}}</span></div></div>");
+	var selection = d3.select("div");
 	selection.template().render([
 		{ obj: { notUsed: "here", someValue: "there", value: "hello" } },
 		{ noObj: { notUsed: "when", someValue: "why", value: "bye" } },

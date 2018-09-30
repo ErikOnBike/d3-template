@@ -1,93 +1,59 @@
-import {select,matcher} from "d3-selection";
-import {FieldParser} from "./field-parser";
-import {SCOPE_BOUNDARY} from "./constants";
+import { select } from "d3-selection";
+import { TemplatePath } from "./template-path";
 
-// Globals
-var namedRenderFilters = {};
-var fieldParser = new FieldParser();
-
-// Main function
-export function renderFilter(name, filterFunc) {
-	return renderFilterPrivate(name, filterFunc, false);
+// ---- Renderer class ----
+// I am a renderer of data onto template elements. I know
+// the template path referring to the element within the
+// template which should be the target for rendering the
+// data on.
+//
+// Implementation: I am an abstract class and therefore
+// my subclasses need to implement the specific render
+// behaviour.
+function Renderer(element, dataFunction) {
+	this.templatePath = new TemplatePath(element);
+	this.dataFunction = dataFunction;
 }
 
-export function renderTweenFilter(name, tweenFilterFunc) {
-	return renderFilterPrivate(name, tweenFilterFunc, true);
-}
-
-function renderFilterPrivate(name, filterFunc, isTweenFilter) {
-	if(filterFunc === null) {
-		delete namedRenderFilters[name];
-	} else if(filterFunc === undefined) {
-		return namedRenderFilters[name];
-	} else {
-		if(typeof filterFunc !== "function") {
-			throw new Error("No function specified when registering renderFilter: " + name);
-		}
-		if(isTweenFilter) {
-			filterFunc.isTweenFunction = true;
-		}
-		namedRenderFilters[name] = filterFunc;
-	}
-}
-
-// Renderer - Renders data on element
-function Renderer(fieldSelectorAndFilters, elementSelector) {
-
-	// Parse field selector and (optional) filters
-	var parseResult = fieldParser.parse(fieldSelectorAndFilters);
-	if(parseResult.value === undefined) {
-		throw new SyntaxError("Failed to parse field selector and/or filter <" + fieldSelectorAndFilters + "> @ " + parseResult.index + ": " + parseResult.errorCode);
-	} else if(parseResult.index !== fieldSelectorAndFilters.length) {
-		throw new SyntaxError("Failed to parse field selector and/or filter <" + fieldSelectorAndFilters + "> @ " + parseResult.index + ": EXTRA_CHARACTERS");
-	}
-
-	// Set instance variables
-	this.dataFunction = createDataFunction(parseResult.value);
-	this.elementSelector = elementSelector;
-}
-
-Renderer.prototype.render = function(/* templateElement */) {
+// ---- Renderer instance methods ----
+// Render the receiver's data onto the template element specified
+// using the (optional) transition specified
+Renderer.prototype.render = function(/* templateElement, transition */) {
 	// Intentionally left empty
 };
 
-// Answer the data function
+// Answer the element referred to by the receivers template path
+Renderer.prototype.resolveToRenderElement = function(templateElement) {
+	return this.templatePath.resolve(templateElement);
+};
+
+// Answer the data function of the receiver
 Renderer.prototype.getDataFunction = function() {
 	return this.dataFunction;
 };
 
-// Answer the element which should be rendered (indicated by the receivers elementSelector)
-Renderer.prototype.getElement = function(templateElement) {
-
-	// Element is either template element itself or child(ren) of the template element (but not both)
-	var selection = templateElement.filter(matcher(this.elementSelector));
-	if(selection.size() === 0) {
-		selection = templateElement.select(this.elementSelector);
-	}
-	return selection;
-};
-
-// Answer whether receiver is GroupRenderer
-Renderer.prototype.isGroupRenderer = function() {
-	return false;
-};
-
-// TextRenderer - Renders data as text of element
-export function TextRenderer(fieldSelector, elementSelector) {
-	Renderer.call(this, fieldSelector, elementSelector);
+// ---- TextRenderer class ----
+// I am a Renderer and I render text inside template elements.
+//
+// Implementation: I render text inside HTML or SVG elements/tags.
+export function TextRenderer(element, dataFunction) {
+	Renderer.call(this, element, dataFunction);
 }
-
 TextRenderer.prototype = Object.create(Renderer.prototype);
 TextRenderer.prototype.constructor = TextRenderer;
+
+// ---- TextRenderer instance methods ----
+// Render the receiver's data as text onto the template element specified
+// using the (optional) transition specified
 TextRenderer.prototype.render = function(templateElement, transition) {
 
 	// Attach transition to element (if present)
+	var element = this.resolveToRenderElement(templateElement);
 	if(transition) {
-		templateElement = templateElement.transition(transition);
+		element = element.transition(transition);
 	}
 
 	// Render text
-	var element = this.getElement(templateElement);
 	var dataFunction = this.getDataFunction();
 	if(dataFunction.isTweenFunction) {
 		if(transition) {
@@ -110,32 +76,33 @@ TextRenderer.prototype.render = function(templateElement, transition) {
 	}
 };
 
-// AttributeRenderer - Renders data as attribute of element
-export function AttributeRenderer(fieldSelector, elementSelector, attribute) {
-	Renderer.call(this, fieldSelector, elementSelector);
+// ---- AttributeRenderer class ----
+// I am a Renderer and I render attributes inside template elements.
+//
+// Implementation: I render attributes of HTML or SVG elements/tags.
+export function AttributeRenderer(element, dataFunction, attribute) {
+	Renderer.call(this, element, dataFunction);
 	this.attribute = attribute;
 }
-
 AttributeRenderer.prototype = Object.create(Renderer.prototype);
 AttributeRenderer.prototype.constructor = AttributeRenderer;
+
+// ---- AttributeRenderer instance methods ----
+// Render the receiver's data as attribute onto the template element specified
+// using the (optional) transition specified
 AttributeRenderer.prototype.render = function(templateElement, transition) {
 
 	// Attach transition to element (if present)
+	var element = this.resolveToRenderElement(templateElement);
 	if(transition) {
-		templateElement = templateElement.transition(transition);
+		element = element.transition(transition);
 	}
 
 	// Render attribute
-	var element = this.getElement(templateElement);
 	var dataFunction = this.getDataFunction();
 	if(dataFunction.isTweenFunction) {
 		if(transition) {
-			element.attrTween(this.attribute, function(d, i, nodes) {
-				var self = this;
-				return function(t) {
-					return dataFunction.call(self, d, i, nodes)(t);
-				};
-			});
+			element.attrTween(this.attribute, dataFunction);
 		} else {
 
 			// If no transition is present, use the final state (t = 1.0)
@@ -148,32 +115,33 @@ AttributeRenderer.prototype.render = function(templateElement, transition) {
 	}
 };
 
-// StyleRenderer - Renders data as style of element
-export function StyleRenderer(fieldSelector, elementSelector, style) {
-	Renderer.call(this, fieldSelector, elementSelector);
+// ---- StyleRenderer class ----
+// I am a Renderer and I render styles inside template elements.
+//
+// Implementation: I render styles of HTML or SVG elements/tags.
+export function StyleRenderer(element, dataFunction, style) {
+	Renderer.call(this, element, dataFunction);
 	this.style = style;
 }
-
 StyleRenderer.prototype = Object.create(Renderer.prototype);
 StyleRenderer.prototype.constructor = StyleRenderer;
+
+// ---- StyleRenderer instance methods ----
+// Render the receiver's data as style onto the template element specified
+// using the (optional) transition specified
 StyleRenderer.prototype.render = function(templateElement, transition) {
 
 	// Attach transition to element (if present)
+	var element = this.resolveToRenderElement(templateElement);
 	if(transition) {
-		templateElement = templateElement.transition(transition);
+		element = element.transition(transition);
 	}
 
 	// Render style
-	var element = this.getElement(templateElement);
 	var dataFunction = this.getDataFunction();
 	if(dataFunction.isTweenFunction) {
 		if(transition) {
-			element.styleTween(this.style, function(d, i, nodes) {
-				var self = this;
-				return function(t) {
-					return dataFunction.call(self, d, i, nodes)(t);
-				};
-			});
+			element.styleTween(this.style, dataFunction);
 		} else {
 
 			// If no transition is present, use the final state (t = 1.0)
@@ -186,14 +154,20 @@ StyleRenderer.prototype.render = function(templateElement, transition) {
 	}
 };
 
-// PropertyRenderer - Renders data as property of element
-export function PropertyRenderer(fieldSelector, elementSelector, property) {
-	Renderer.call(this, fieldSelector, elementSelector);
+// ---- PropertyRenderer class ----
+// I am a Renderer and I render properties inside template elements.
+//
+// Implementation: I render properties of HTML or SVG elements/tags.
+export function PropertyRenderer(element, dataFunction, property) {
+	Renderer.call(this, element, dataFunction);
 	this.property = property;
 }
-
 PropertyRenderer.prototype = Object.create(Renderer.prototype);
 PropertyRenderer.prototype.constructor = PropertyRenderer;
+
+// ---- PropertyRenderer instance methods ----
+// Render the receiver's data as property onto the template element specified
+// using the (optional) transition specified
 PropertyRenderer.prototype.render = function(templateElement, transition) {
 
 	// Do not attach transition to element (like with AttributeRenderer and StyleRenderer)
@@ -201,7 +175,7 @@ PropertyRenderer.prototype.render = function(templateElement, transition) {
 	// be used with a property.
 
 	// Render property
-	var element = this.getElement(templateElement);
+	var element = this.resolveToRenderElement(templateElement);
 	var dataFunction = this.getDataFunction();
 	if(dataFunction.isTweenFunction) {
 		if(transition) {
@@ -209,9 +183,10 @@ PropertyRenderer.prototype.render = function(templateElement, transition) {
 			// Attach tween to transition and perform update
 			var property = this.property;
 			transition.tween(property, function(d, i, nodes) {
+				var tweenElement = select(this);
 				var self = this;
 				return function(t) {
-					element.property(property, dataFunction.call(self, d, i, nodes)(t));
+					tweenElement.property(property, dataFunction.call(self, d, i, nodes)(t));
 				};
 			});
 		} else {
@@ -225,219 +200,3 @@ PropertyRenderer.prototype.render = function(templateElement, transition) {
 		element.property(this.property, dataFunction);
 	}
 };
-
-// GroupRenderer - Renders data to a repeating group of elements
-export function GroupRenderer(fieldSelector, elementSelector, childElement) {
-	Renderer.call(this, fieldSelector, elementSelector);
-	this.childElement = childElement;
-	this.eventHandlersMap = {};
-	this.renderers = [];
-}
-
-GroupRenderer.prototype = Object.create(Renderer.prototype);
-GroupRenderer.prototype.constructor = GroupRenderer;
-GroupRenderer.prototype.render = function(templateElement, transition) {
-
-	// Sanity check
-	if(this.childElement.size() === 0) {
-		return;
-	}
-
-	// Join data onto DOM
-	var joinedElements = this.getElement(templateElement)
-		.selectAll(function() { return this.children; })
-			.data(this.getDataFunction())
-	;
-
-	// Add new elements
-	var self = this;
-	var newElements = joinedElements
-		.enter()
-			.append(function() { return self.childElement.node().cloneNode(true); })
-	;
-
-	// Add event handlers to new elements
-	Object.keys(this.eventHandlersMap).forEach(function(selector) {
-		var selection = newElements.filter(matcher(selector));
-		if(selection.size() === 0) {
-			selection = newElements.select(selector);
-		}
-		applyEventHandlers(self.eventHandlersMap[selector], selection);
-	});
-
-	// Remove superfluous elements
-	joinedElements
-		.exit()
-			.remove()
-	;
-
-	// Update data of children (both new and updated)
-	var childElements = newElements.merge(joinedElements);
-	childElements.each(function() {
-		var childElement = select(this);
-		var data = childElement.datum();	// Elements receive data in root by enter/append above
-		copyDataToChildren(data, childElement);
-	});
-
-	// Render children
-	this.renderers.forEach(function(childRenderer) {
-		childRenderer.render(childElements, transition);
-	});
-};
-
-// Add event handlers for specified (sub)element (through a selector) to the receiver
-GroupRenderer.prototype.addEventHandlers = function(selector, eventHandlers) {
-	var entry = this.eventHandlersMap[selector];
-	this.eventHandlersMap[selector] = entry ? entry.concat(eventHandlers) : eventHandlers;
-};
-
-// Add renderers for child elements to the receiver
-GroupRenderer.prototype.addRenderer = function(renderer) {
-
-	// Append group renderers in order received, but insert non-group renderers like attribute, style or
-	// property renderers (on the same element)
-	// This allows filters on repeat elements to use the attribute or style values which are also be rendered
-	if(!renderer.isGroupRenderer()) {
-
-		// Find first group renderer which will render on the same element
-		var firstGroupRendererIndex = -1;
-		var currentIndex = this.renderers.length - 1;
-		var isGroupRendererOnSameElement = function(currentRenderer) {
-			return currentRenderer.elementSelector === renderer.elementSelector &&
-				currentRenderer.isGroupRenderer()
-			;
-		};
-		while(currentIndex >= 0 && isGroupRendererOnSameElement(this.renderers[currentIndex])) {
-			firstGroupRendererIndex = currentIndex;
-			currentIndex--;
-		}
-
-		// If such group renderer is found, insert (attr/style) renderer before (otherwise append)
-		if(firstGroupRendererIndex >= 0) {
-			this.renderers.splice(firstGroupRendererIndex, 0, renderer);
-		} else {
-			this.renderers.push(renderer);
-		}
-	} else {
-		this.renderers.push(renderer);
-	}
-};
-
-// Answer whether receiver is GroupRenderer
-GroupRenderer.prototype.isGroupRenderer = function() {
-	return true;
-};
-
-// RepeatRenderer - Renders data to a repeating group of elements
-export function RepeatRenderer(fieldSelector, elementSelector, childElement) {
-	GroupRenderer.call(this, fieldSelector, elementSelector, childElement);
-}
-
-RepeatRenderer.prototype = Object.create(GroupRenderer.prototype);
-RepeatRenderer.prototype.constructor = RepeatRenderer;
-
-// IfRenderer - Renders data to a conditional group of elements
-export function IfRenderer(fieldSelector, elementSelector, childElement) {
-	GroupRenderer.call(this, fieldSelector, elementSelector, childElement);
-}
-
-IfRenderer.prototype = Object.create(GroupRenderer.prototype);
-IfRenderer.prototype.constructor = IfRenderer;
-
-IfRenderer.prototype.getDataFunction = function() {
-
-	// Use d3's data binding of arrays to handle conditionals.
-	// For conditional group create array with either the data as single element or empty array.
-	// This will ensure that a single element is created/updated or an existing element is removed.
-	var self = this;
-	return function(d, i, nodes) { return Renderer.prototype.getDataFunction.call(self)(d, i, nodes) ? [ d ] : []; };
-};
-
-// WithRenderer - Renders data to a group of elements with new scope
-export function WithRenderer(fieldSelector, elementSelector, childElement) {
-	GroupRenderer.call(this, fieldSelector, elementSelector, childElement);
-}
-
-WithRenderer.prototype = Object.create(GroupRenderer.prototype);
-WithRenderer.prototype.constructor = WithRenderer;
-
-WithRenderer.prototype.getDataFunction = function() {
-
-	// Use d3's data binding of arrays to handle with.
-	// For with group create array with the new scoped data as single element
-	// This will ensure that all children will receive newly scoped data
-	var self = this;
-	return function(d, i, nodes) {
-		var node = this;
-		return [ Renderer.prototype.getDataFunction.call(self).call(node, d, i, nodes) ];
-	};
-};
-
-// Helper functions
-
-// Apply specified event handlers onto selection
-function applyEventHandlers(eventHandlers, selection) {
-	eventHandlers.forEach(function(eventHandler) {
-		var typename = eventHandler.type;
-		if(eventHandler.name) {
-			typename += "." + eventHandler.name;
-		}
-		selection.on(typename, eventHandler.value, eventHandler.capture);
-	});
-}
-
-// Answer a d3 data function for specified field selector
-export function createDataFunction(parseFieldResult) {
-	var fieldSelectors = parseFieldResult.fieldSelectors;
-	var filterReferences = parseFieldResult.filterReferences;
-
-	// Create initial value function
-	var initialValueFunction = function(d) {
-		return fieldSelectors.reduce(function(text, selector) {
-			return text !== undefined && text !== null ? text[selector] : text;
-		}, d);
-	};
-
-	// Decide if data function is tweenable (depends on last filter applied)
-	var isTweenFunction = false;
-	var lastFilterReference = filterReferences.length > 0 ? filterReferences[filterReferences.length - 1] : null;
-	if(lastFilterReference) {
-		var filter = namedRenderFilters[lastFilterReference.name];
-		if(filter && filter.isTweenFunction) {
-			isTweenFunction = true;
-		}
-	}
-
-	// Create data function based on filters and initial value
-	var dataFunction = function(d, i, nodes) {
-		var node = this;
-		return filterReferences.reduce(function(d, filterReference) {
-			var filter = namedRenderFilters[filterReference.name];
-			if(filter) {
-				var args = filterReference.args.slice(0);
-
-				// Prepend d
-				args.splice(0, 0, d);
-
-				// Append i and nodes
-				args.push(i, nodes);
-				return filter.apply(node, args);
-			}
-			return d;
-		}, initialValueFunction(d, i, nodes));
-	};
-	dataFunction.isTweenFunction = isTweenFunction;
-
-	return dataFunction;
-}
-
-// Copy specified data onto all children of the element (recursively)
-var copyDataToChildren = function(data, element) {
-	element.selectAll(function() { return this.children; }).each(function() {
-		var childElement = select(this);
-		if(!childElement.classed(SCOPE_BOUNDARY)) {
-			childElement.datum(data);
-			copyDataToChildren(data, childElement);
-		}
-	});
-}
