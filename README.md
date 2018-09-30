@@ -302,8 +302,7 @@ As can be seen in the example above, there is no `else` clause for if groups. An
 <div id="my-template" data-import="{{d.employees.length > 0 ? '#employees' : '#no-employees'}}">
         <!-- No child elements allowed here! -->
 </div>
-
-    
+```
 
 ### <a name="Import-templates">Import templates</a>
 
