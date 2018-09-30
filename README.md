@@ -39,7 +39,7 @@ The general usage is probably best described by an example (see example on [bl.o
         <span>{{`Birthdate: ${d3.timeFormat("%-d %B %Y")(d.date)}`}}</span>
     </div>
     <div>
-	<span>Honours given name to:</span>
+        <span>Honours given name to:</span>
         <ul data-repeat="{{d.honours.given}}">
             <li>{{d}}</li>
         </ul>
@@ -181,6 +181,7 @@ The following known *limitations* are present:
 
 * Grouping elements (`repeat`, `if` or `with`) can not be combined on the same element. One has to be wrapped inside the other.
 * An import element can only be combined with the `with` grouping to scope (or map) the data for the imported template. Combining `import` with `repeat` or `if` is not allowed.
+* There is no `else` for `if` groupings. A second `if` needs to be added (with a negated expression) or an `import` could be used (see [if groups](#If-groups) explanation).
 * Setting properties of (for example) HTML input elements can not be done using transitions, since D3 transitions do not support it. It is however possible to create a [tween data function](#tweenDataFunction).
 
 ## <a name="API-Reference">API Reference</a>
@@ -285,7 +286,24 @@ If groups are conditional elements within a template. It allows a child element 
 </div>
 ```
 
-As can be seen in the example above, there is no `else` clause for if groups.
+As can be seen in the example above, there is no `else` clause for if groups. Another approach would be to have a dynamic import which chooses the correct template.
+
+```HTML
+<div id="templates" style="display: none;">
+    <div id="employees">
+        <div data-repeat="{{d.employees}}">
+            <div>...</div>
+        </div>
+    </div>
+    <div id="no-employees">
+        <div>There are no employees in this company.</div>
+    </div>
+</div>
+<div id="my-template" data-import="{{d.employees.length > 0 ? '#employees' : '#no-employees'}}">
+        <!-- No child elements allowed here! -->
+</div>
+
+    
 
 ### <a name="Import-templates">Import templates</a>
 
@@ -293,44 +311,44 @@ It is possible to import another template. The data bound to the element during 
 
 ```HTML
 <div id="templates" style="display: none;">
-	<div id="incoming-message">
-		<div>
-			<div>{{`From: ${d.sender}`}}</div>
-			<div>{{d.content}}</div>
-		</div>
-	</div>
-	<div id="outgoing-message">
-		<div>{{d.content}}</div>
-	</div>
+    <div id="incoming-message">
+        <div>
+            <div>{{`From: ${d.sender}`}}</div>
+                <div>{{d.content}}</div>
+            </div>
+        </div>
+        <div id="outgoing-message">
+            <div>{{d.content}}</div>
+        </div>
 </div>
 <div id="messenger">
-	<div class="list" data-repeat="{{d}}">
-		<div data-import="{{d.sender === 'Me' ? '#outgoing-message' : '#incoming-message'}}">
-			<!-- No child elements allowed here! -->
-		</div>
-	</div>
+    <div class="list" data-repeat="{{d}}">
+        <div data-import="{{d.sender === 'Me' ? '#outgoing-message' : '#incoming-message'}}">
+            <!-- No child elements allowed here! -->
+        </div>
+    </div>
 </div>
 <script>
-	var messages = [
-		{ sender: "Someone", content: "Hello world" },
-		{ sender: "Me", content: "Hello to you too" },
-		{ sender: "Someone", content: "What are you doing?" },
-		{ sender: "Me", content: "Writing a D3 template" },
-		{ sender: "Someone", content: "That sounds interesting" },
-		{ sender: "Someone", content: "I am already familiar with D3" },
-		{ sender: "Someone", content: "Where can I learn about that?" },
-		{ sender: "Me", content: "Check out the other examples" }
-	];
+    var messages = [
+        { sender: "Someone", content: "Hello world" },
+        { sender: "Me", content: "Hello to you too" },
+        { sender: "Someone", content: "What are you doing?" },
+        { sender: "Me", content: "Writing a D3 template" },
+        { sender: "Someone", content: "That sounds interesting" },
+        { sender: "Someone", content: "I am already familiar with D3" },
+        { sender: "Someone", content: "Where can I learn about that?" },
+        { sender: "Me", content: "Check out the other examples" }
+    ];
 
-	// Create templates from the two message types incoming and outgoing
-	d3.select("#incoming-message").template();
-	d3.select("#outgoing-message").template();
-
-	// Create template from the messages group and render data
-	d3.select("#messenger")
-		.template()
-		.render(messages)
-	;
+    // Create templates from the two message types incoming and outgoing
+    d3.select("#incoming-message").template();
+    d3.select("#outgoing-message").template();
+    
+    // Create template from the messages group and render data
+    d3.select("#messenger")
+        .template()
+        .render(messages)
+    ;
 </script>
 ```
 
@@ -340,45 +358,45 @@ An import can be combined with `with` grouping to scope (or map) the data onto t
 
 ```HTML
 <div id="#templates" style="display: none;">
-	<div id="person">
-		<dl>
-			<dt>Name</dt><dd>{{d.fullname}}</dd>
-			<dt>Email</dt><dd>{{d.email}}</dd>
-		</dl>
-	</div>
+    <div id="person">
+        <dl>
+            <dt>Name</dt><dd>{{d.fullname}}</dd>
+            <dt>Email</dt><dd>{{d.email}}</dd>
+        </dl>
+    </div>
 </div>
 <div id="company">
-	<h1>{{d.name}}</h1>
-	<div class="list" data-repeat="{{d.employees}}">
-		<div data-import="{{'#person'}}" data-with="{{employeeToPerson(d)}}">
-			<!-- No child elements allowed here! -->
-		</div>
-	</div>
+    <h1>{{d.name}}</h1>
+    <div class="list" data-repeat="{{d.employees}}">
+        <div data-import="{{'#person'}}" data-with="{{employeeToPerson(d)}}">
+            <!-- No child elements allowed here! -->
+        </div>
+    </div>
 </div>
 <script>
-	// Function to convert employee to person
-	function employeeToPerson(employee) {
-		return {
-			fullname: employee.firstname + " " + employee.lastname,
-			email: employee.workEmail
-		};
-	}
+    // Function to convert employee to person
+    function employeeToPerson(employee) {
+        return {
+            fullname: employee.firstname + " " + employee.lastname,
+            email: employee.workEmail
+        };
+    }
 
-	// Create template (for importing)
-	d3.select("#person").template();
+    // Create template (for importing)
+    d3.select("#person").template();
 
-	// Create template and render data
-	d3.select("#company")
-		.template()
-		.render({
-			name: "Some company",
-			employees: [
-				{ firstname: "Alan", lastname: "Turing", workEmail: "alan@some.com", privateEmail: "alan.turing@gmail.com" },
-				{ firstname: "Alan", lastname: "Kay", workEmail: "alan2@some.com", privateEmail: "alan.kay@yahoo.com" },
-				{ firstname: "Bret", lastname: "Victor", workEmail: "bret@some.com", privateEmail: "bret.victor@hotmail.com" }
-			] 
-		})
-	;
+    // Create template and render data
+    d3.select("#company")
+        .template()
+        .render({
+            name: "Some company",
+            employees: [
+                { firstname: "Alan", lastname: "Turing", workEmail: "alan@some.com", privateEmail: "alan.turing@gmail.com" },
+                { firstname: "Alan", lastname: "Kay", workEmail: "alan2@some.com", privateEmail: "alan.kay@yahoo.com" },
+                { firstname: "Bret", lastname: "Victor", workEmail: "bret@some.com", privateEmail: "bret.victor@hotmail.com" }
+            ] 
+        })
+    ;
 ```
 
 ### <a name="Transitions">Transitions</a>
@@ -390,7 +408,7 @@ selection
     .transition()
         .delay(100)
         .duration(700)
-	.render(data)
+        .render(data)
 ;
 ```
 
@@ -436,7 +454,7 @@ If event handlers are applied to a selection before a template is being created 
 
     // Add event handler
     list.select("li").on("click", function(d) {
-	window.alert("'" + d.english + "' translates into '" + d.dutch + "' for the Dutch language");
+        window.alert("'" + d.english + "' translates into '" + d.dutch + "' for the Dutch language");
     });
         
     // Create template now that the event handlers are applied
