@@ -2,7 +2,8 @@
 
 ## Basic usage
 * [basic usage](https://bl.ocks.org/ErikOnBike/f36ce2b4c88ef525d0cfe34a766d8067) - Example from README
-* [repeat group](https://bl.ocks.org/ErikOnBike/4ef1c2af7d64023532745f0d61f08c18) - show d3-modules from GitHub
+* [repeat group](https://bl.ocks.org/ErikOnBike/4ef1c2af7d64023532745f0d61f08c18) - Show d3-modules from GitHub
+* [import template](https://bl.ocks.org/ErikOnBike/ad0bcdac5dc782adb91774858fafdd28) - Import other templates
 
 ## Usage patterns
 * [transition](https://bl.ocks.org/ErikOnBike/6a6ff9e033cd883e31e631f8f2ebfbbe) - Transition multiple SVG paths
