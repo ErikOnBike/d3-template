@@ -1,3 +1,4 @@
 examples/
 private/
 test/
+.nyc_output/
