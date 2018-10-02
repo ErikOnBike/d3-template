@@ -114,10 +114,10 @@ The following *features* are present:
 
     ```SVG
     <!-- Most browsers do not like this (invalid according to SVG spec) -->
-    <circle cx="{{x}}" cy="{{y}}" r="{{radius}}"></circle>
+    <circle cx="{{scalex(d.x)}}" cy="{{scaley(d.y)}}" r="{{d.radius}}"></circle>
 
     <!-- Browsers are okay with this (valid according to SVG spec) -->
-    <circle data-attr-cx="{{x}}" data-attr-cy="{{y}}" data-attr-r="{{radius}}"></circle>
+    <circle data-attr-cx="{{scalex(d.x)}}" data-attr-cy="{{scaley(d.y)}}" data-attr-r="{{d.radius}}"></circle>
     ```
 
 * [Repeating](#Repeating-groups) and conditional groups (through `data-repeat` and `data-if` attribute).
@@ -135,7 +135,7 @@ The following known *limitations* are present:
 
     ```HTML
     <!-- This will not be recognised by d3-template -->
-    <div data-style-width="{{width}}px">...</div>
+    <div data-style-width="{{d.width}}px">...</div>
 
     <!-- Use one of the following instead -->
     <div data-style-width="{{d.width + 'px'}}">...</div>
