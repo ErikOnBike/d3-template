@@ -15,6 +15,7 @@ var defaults = {
 
 // ---- Fix for IE (small kneefall because difficult to fix otherwise) ----
 var REG_EX_FLAG = "";
+/* istanbul ignore next */
 try { if((new RegExp(".*", "u")).unicode) { REG_EX_FLAG = "u"; } } catch(e) { /* Ignore */ }
 
 // ---- Constants ----
