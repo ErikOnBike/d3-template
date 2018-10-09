@@ -15,7 +15,7 @@ var defaults = {
 
 // ---- Fix for IE (small kneefall because difficult to fix otherwise) ----
 var REG_EX_FLAG = "";
-try { new RegExp(".*", "u"); REG_EX_FLAG = "u"; } catch(e) { /* Ignore */ }
+try { if((new RegExp(".*", "u")).unicode) { REG_EX_FLAG = "u"; } } catch(e) { /* Ignore */ }
 
 // ---- Constants ----
 var FIELD_SELECTOR_REG_EX = new RegExp("^\\s*\\{\\{\\s*(.*)\\s*\\}\\}\\s*$", REG_EX_FLAG);
