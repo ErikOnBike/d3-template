@@ -1,5 +1,3 @@
-import { matcher } from "d3-selection";
-
 // ---- Constants ----
 var ELEMENT_SELECTOR_ATTRIBUTE = "data-d3t7s";
 
@@ -20,16 +18,17 @@ var ELEMENT_SELECTOR_ATTRIBUTE = "data-d3t7s";
 // resolving might occur on a single root element as well as multiple
 // root elements.
 export function TemplatePath(element) {
-	this.selector = TemplatePath.generateUniqueSelector(element);
+	this.selectorId = TemplatePath.generateUniqueSelectorId(element);
+	this.selector = "[" + ELEMENT_SELECTOR_ATTRIBUTE + "=\"" + this.selectorId + "\"]";
 }
 
 // ---- TemplatePath class methods ----
-// Generate a unique selector for specified element
+// Generate a unique selector id for specified element
 // or use existing if one is already present
 // (this selector might be copied into siblings for repeat groupings,
 // so uniqueness is not absolute)
 var selectorIdCounter = 0;
-TemplatePath.generateUniqueSelector = function(element) {
+TemplatePath.generateUniqueSelectorId = function(element) {
 
 	// Check for presence of selector id
 	var selectorId = element.attr(ELEMENT_SELECTOR_ATTRIBUTE);
@@ -42,8 +41,8 @@ TemplatePath.generateUniqueSelector = function(element) {
 		element.attr(ELEMENT_SELECTOR_ATTRIBUTE, selectorId);
 	}
 
-	// Answer the selector
-	return "[" + ELEMENT_SELECTOR_ATTRIBUTE + "=\"" + selectorId + "\"]";
+	// Answer the selector id
+	return selectorId;
 };
 
 // ---- TemplatePath instance methods ----
@@ -51,9 +50,8 @@ TemplatePath.generateUniqueSelector = function(element) {
 TemplatePath.prototype.resolve = function(rootElement) {
 
 	// The resulting element is either the root element itself or child(ren) of the root element
-	var selection = rootElement.filter(matcher(this.selector));
-	if(selection.size() === 0) {
-		selection = rootElement.selectAll(this.selector);
+	if(rootElement.attr(ELEMENT_SELECTOR_ATTRIBUTE) === this.selectorId) {
+		return rootElement;
 	}
-	return selection;
+	return rootElement.selectAll(this.selector);
 };
