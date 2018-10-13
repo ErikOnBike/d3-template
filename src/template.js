@@ -113,19 +113,20 @@ export function template(selection, options) {
 	selection.each(function() {
 		var rootElement = select(this);
 
-		if(!TemplateParser.isTemplate(rootElement)) {
+		// Check for existing template
+		var templateNode = TemplateNode.getTemplateNode(rootElement);
+		if(templateNode) {
+			throw new Error("Templates should not overlap. Use 'import' here.");
+		} else {
 
 			// Create a template root node for the element
 			var rootNode = new TemplateNode(rootElement);
 
-			// Create template using specified identification mechanism
-			var template = new TemplateParser(rootNode, options);
+			// Create template parser using specified identification mechanism
+			var templateParser = new TemplateParser(options);
 
-			// Add renderers so template can be rendered when data is provided
-			template.addNodesAndRenderers(rootElement, rootNode);
-
-			// Store template in DOM node
-			this.__d3t7__ = template;
+			// Add renderers to root node so template can be rendered when data is provided
+			templateParser.addTemplateNodesAndRenderers(rootElement, rootNode);
 		}
 	});
 
@@ -157,34 +158,24 @@ export function render(selectionOrTransition, data) {
 		var element = select(this);
 
 		// Retrieve template for element
-		if(!TemplateParser.isTemplate(element)) {
+		var templateNode = TemplateNode.getTemplateNode(element);
+		if(!templateNode) {
 			throw new Error("Method render() called on non-template selection.");
 		}
-		var template = this.__d3t7__;
 
 		// Join data and render template
-		template
-			.joinData(element, data)
-			.render(element, transition)
-		;
+		templateNode.renderData(data, element, transition);
 	});
 
 	return selectionOrTransition;
 }
 
 // ---- TemplateParser class ----
-function TemplateParser(rootNode, options) {
-	this.rootNode = rootNode;
+function TemplateParser(options) {
 	this.options = options;
 }
 
 // ---- TemplateParser class methods ----
-// Answer whether specified element is a template parser
-TemplateParser.isTemplate = function(element) {
-	var node = element.node();
-	return node.__d3t7__ && node.__d3t7__.render;
-};
-
 // Answer a fixed (ie non live) list of attributes for the specified element
 TemplateParser.getAttributesFor = function(element) {
 	var attributes = [];
@@ -242,26 +233,11 @@ TemplateParser.createDataFunction = function(expression) {
 };
 
 // ---- TemplateParser instance methods ----
-// Join data onto receiver
-TemplateParser.prototype.joinData = function(rootElement, data) {
-	rootElement.datum(data);
-	this.rootNode.joinData(rootElement);
-
-	return this;
-};
-
-// Render data onto receiver
-TemplateParser.prototype.render = function(rootElement, transition) {
-	this.rootNode.render(rootElement, transition);
-
-	return this;
-};
-
 // Add renderers for the specified element to specified parent node
-TemplateParser.prototype.addNodesAndRenderers = function(element, parentNode) {
+TemplateParser.prototype.addTemplateNodesAndRenderers = function(element, parentNode) {
 
 	// Validate templates do not overlap
-	if(TemplateParser.isTemplate(element)) {
+	if(TemplateNode.isTemplateNode(element) && TemplateNode.getTemplateNode(element) !== parentNode) {
 		throw new Error("Templates should not overlap. Use 'import' here.");
 	}
 
@@ -274,7 +250,7 @@ TemplateParser.prototype.addNodesAndRenderers = function(element, parentNode) {
 	var self = this;
 	element.selectAll(ALL_DIRECT_CHILDREN).each(function() {
 		var childElement = select(this);
-		self.addNodesAndRenderers(childElement, parentNode);
+		self.addTemplateNodesAndRenderers(childElement, parentNode);
 	});
 };
 
@@ -369,7 +345,7 @@ TemplateParser.prototype.addGroupingNodes = function(element, parentNode) {
 		// Add template nodes and renderers for the grouping element's child (except for import)
 		if(!importGrouping.importSelector) {
 			if(childElement.size() === 1) {
-				this.addNodesAndRenderers(childElement, groupingNode);
+				this.addTemplateNodesAndRenderers(childElement, groupingNode);
 
 				// Store event handlers in the grouping node (it will be used there).
 				// This is only relevant for childElement since it is removed
