@@ -113,13 +113,13 @@ export function template(selection, options) {
 	selection.each(function() {
 		var rootElement = select(this);
 
-		if(!Template.isTemplate(rootElement)) {
+		if(!TemplateParser.isTemplate(rootElement)) {
 
 			// Create a template root node for the element
 			var rootNode = new TemplateNode(rootElement);
 
 			// Create template using specified identification mechanism
-			var template = new Template(rootNode, options);
+			var template = new TemplateParser(rootNode, options);
 
 			// Add renderers so template can be rendered when data is provided
 			template.addNodesAndRenderers(rootElement, rootNode);
@@ -157,7 +157,7 @@ export function render(selectionOrTransition, data) {
 		var element = select(this);
 
 		// Retrieve template for element
-		if(!Template.isTemplate(element)) {
+		if(!TemplateParser.isTemplate(element)) {
 			throw new Error("Method render() called on non-template selection.");
 		}
 		var template = this.__d3t7__;
@@ -172,21 +172,21 @@ export function render(selectionOrTransition, data) {
 	return selectionOrTransition;
 }
 
-// ---- Template class ----
-function Template(rootNode, options) {
+// ---- TemplateParser class ----
+function TemplateParser(rootNode, options) {
 	this.rootNode = rootNode;
 	this.options = options;
 }
 
-// ---- Template class methods ----
-// Answer whether specified element is a template
-Template.isTemplate = function(element) {
+// ---- TemplateParser class methods ----
+// Answer whether specified element is a template parser
+TemplateParser.isTemplate = function(element) {
 	var node = element.node();
 	return node.__d3t7__ && node.__d3t7__.render;
 };
 
 // Answer a fixed (ie non live) list of attributes for the specified element
-Template.getAttributesFor = function(element) {
+TemplateParser.getAttributesFor = function(element) {
 	var attributes = [];
 	if(element.node().hasAttributes()) {
 		var attributeMap = element.node().attributes;
@@ -215,7 +215,7 @@ Template.getAttributesFor = function(element) {
 };
 
 // Answer a data function based on the specified expression
-Template.createDataFunction = function(expression) {
+TemplateParser.createDataFunction = function(expression) {
 
 	// Check tags for data function
 	var isTweenFunction = false;
@@ -241,9 +241,9 @@ Template.createDataFunction = function(expression) {
 	return dataFunction;
 };
 
-// ---- Template instance methods ----
+// ---- TemplateParser instance methods ----
 // Join data onto receiver
-Template.prototype.joinData = function(rootElement, data) {
+TemplateParser.prototype.joinData = function(rootElement, data) {
 	rootElement.datum(data);
 	this.rootNode.joinData(rootElement);
 
@@ -251,17 +251,17 @@ Template.prototype.joinData = function(rootElement, data) {
 };
 
 // Render data onto receiver
-Template.prototype.render = function(rootElement, transition) {
+TemplateParser.prototype.render = function(rootElement, transition) {
 	this.rootNode.render(rootElement, transition);
 
 	return this;
 };
 
 // Add renderers for the specified element to specified parent node
-Template.prototype.addNodesAndRenderers = function(element, parentNode) {
+TemplateParser.prototype.addNodesAndRenderers = function(element, parentNode) {
 
 	// Validate templates do not overlap
-	if(Template.isTemplate(element)) {
+	if(TemplateParser.isTemplate(element)) {
 		throw new Error("Templates should not overlap. Use 'import' here.");
 	}
 
@@ -279,7 +279,7 @@ Template.prototype.addNodesAndRenderers = function(element, parentNode) {
 };
 
 // Add grouping nodes (like repeat, if, with or import) for the specified element to specified parent node
-Template.prototype.addGroupingNodes = function(element, parentNode) {
+TemplateParser.prototype.addGroupingNodes = function(element, parentNode) {
 
 	// Handle grouping nodes
 	var groupings = [
@@ -348,14 +348,14 @@ Template.prototype.addGroupingNodes = function(element, parentNode) {
 		// Set child element to the child element selector in case of import
 		// For import there can't be a child so it is okay to 'overwrite' it.
 		if(importGrouping.importSelector) {
-			childElement = Template.createDataFunction(importGrouping.importSelector);
+			childElement = TemplateParser.createDataFunction(importGrouping.importSelector);
 		}
 
 		// Add grouping nodes
 		var grouping = groupings[0];
 		var groupingNode = new grouping.nodeClass(
 			element,
-			Template.createDataFunction(grouping.match[1]),
+			TemplateParser.createDataFunction(grouping.match[1]),
 			childElement
 		);
 		parentNode.addChildNode(groupingNode);
@@ -388,11 +388,11 @@ Template.prototype.addGroupingNodes = function(element, parentNode) {
 };
 
 // Add attribute renderers (include attributes referring to style properties) for the specified element to specified parent node
-Template.prototype.addAttributeRenderers = function(element, parentNode) {
+TemplateParser.prototype.addAttributeRenderers = function(element, parentNode) {
 
 	// Create a fixed (ie non live) list of attributes
 	// (since attributes will be removed during processing)
-	var attributes = Template.getAttributesFor(element);
+	var attributes = TemplateParser.getAttributesFor(element);
 	
 	// Handle attributes (and styles)
 	var options = this.options;
@@ -440,7 +440,7 @@ Template.prototype.addAttributeRenderers = function(element, parentNode) {
 			// Add renderer
 			parentNode.addRenderer(new renderClass(
 				element,
-				Template.createDataFunction(match[1]),
+				TemplateParser.createDataFunction(match[1]),
 				renderAttributeName
 			));
 
@@ -457,7 +457,7 @@ Template.prototype.addAttributeRenderers = function(element, parentNode) {
 };
 
 // Add text renderers for the specified element to specified parent node
-Template.prototype.addTextRenderers = function(element, parentNode) {
+TemplateParser.prototype.addTextRenderers = function(element, parentNode) {
 
 	// Handle text nodes (no other children allowed on these elements)
 	if(element.node().children.length === 0) {
@@ -468,7 +468,7 @@ Template.prototype.addTextRenderers = function(element, parentNode) {
 		if(match) {
 
 			// Add renderer
-			var textRenderer = new TextRenderer(element, Template.createDataFunction(match[1]));
+			var textRenderer = new TextRenderer(element, TemplateParser.createDataFunction(match[1]));
 			parentNode.addRenderer(textRenderer);
 
 			// Remove field selector from text node
