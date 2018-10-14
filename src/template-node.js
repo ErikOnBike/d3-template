@@ -3,7 +3,6 @@ import { TemplatePath } from "./template-path";
 
 // ---- Constants ----
 var ELEMENT_BOUNDARY_ATTRIBUTE = "data-d3t7b";
-var TEMPLATE_NODE_PROPERTY = "__d3t7tn__";
 var BOOLEAN_ATTRIBUTE_VALUE = "1";	// Smallest (somewhat meaningful) thruthy string value
 var ALL_DIRECT_CHILDREN = function() { return this.children; };
 
@@ -24,14 +23,14 @@ export function TemplateNode(rootElement) {
 	rootElement.attr(ELEMENT_BOUNDARY_ATTRIBUTE, BOOLEAN_ATTRIBUTE_VALUE);
 
 	// Add receiver to root element
-	rootElement.property(TEMPLATE_NODE_PROPERTY, this);
+	rootElement.property("__d3t7tn__", this);
 }
 
 // ---- TemplateNode class methods ----
 // Answer whether specified element (singular) is a template node
 TemplateNode.isTemplateNode = function(element) {
 	var node = element.node();
-	return !!node[TEMPLATE_NODE_PROPERTY];
+	return !!node.__d3t7tn__;
 };
 
 // Retrieve closest template node element of the specified DOM element (singular)
@@ -39,10 +38,10 @@ TemplateNode.isTemplateNode = function(element) {
 // If no template node is present null will be answered.
 TemplateNode.getTemplateNode = function(element) {
 	var node = element.node();
-	while(node && !node[TEMPLATE_NODE_PROPERTY]) {
+	while(node && !node.__d3t7tn__) {
 		node = node.parentNode;
 	}
-	return node ? node[TEMPLATE_NODE_PROPERTY] : null;
+	return node ? node.__d3t7tn__ : null;
 };
 
 // Copy specified data onto all children of the DOM node (recursively)
@@ -168,13 +167,13 @@ GroupingNode.prototype.joinData = function(rootElement) {
 	var childElement = this.getChildElement(rootElement);
 	var childNode = childElement.node();
 	var templateElements = this.resolveTemplateElements(rootElement);
-	if(childNode && childNode[TEMPLATE_NODE_PROPERTY]) {
+	if(childNode && childNode.__d3t7tn__) {
 
 		// This is import of template. If imported template has
 		// changed, remove current children and create new template.
 		var currentChildNode = templateElements.node();
 		if(currentChildNode.firstElementChild) {
-			if(childNode[TEMPLATE_NODE_PROPERTY] !== currentChildNode.firstElementChild[TEMPLATE_NODE_PROPERTY]) {
+			if(childNode.__d3t7tn__ !== currentChildNode.firstElementChild.__d3t7tn__) {
 				currentChildNode.removeChild(currentChildNode.firstElementChild);
 			}
 		}
@@ -200,8 +199,8 @@ GroupingNode.prototype.joinData = function(rootElement) {
 				// (removing its id for uniqueness and copying template if applicable)
 				var clonedNode = childNode.cloneNode(true);
 				clonedNode.removeAttribute("id");
-				if(childNode[TEMPLATE_NODE_PROPERTY]) {
-					clonedNode[TEMPLATE_NODE_PROPERTY] = childNode[TEMPLATE_NODE_PROPERTY];
+				if(childNode.__d3t7tn__) {
+					clonedNode.__d3t7tn__ = childNode.__d3t7tn__;
 				}
 				return clonedNode;
 			})

@@ -126,7 +126,7 @@ export function template(selection, options) {
 			var templateParser = new TemplateParser(options);
 
 			// Add renderers to root node so template can be rendered when data is provided
-			templateParser.addTemplateNodesAndRenderers(rootElement, rootNode);
+			templateParser.parse(rootElement, rootNode);
 		}
 	});
 
@@ -157,11 +157,13 @@ export function render(selectionOrTransition, data) {
 	selectionOrTransition.each(function() {
 		var element = select(this);
 
-		// Retrieve template for element
-		var templateNode = TemplateNode.getTemplateNode(element);
-		if(!templateNode) {
+		// Validate that element is a template node (which can be rendered)
+		if(!TemplateNode.isTemplateNode(element)) {
 			throw new Error("Method render() called on non-template selection.");
 		}
+
+		// Retrieve template for element
+		var templateNode = TemplateNode.getTemplateNode(element);
 
 		// Join data and render template
 		templateNode.renderData(data, element, transition);
@@ -233,29 +235,29 @@ TemplateParser.createDataFunction = function(expression) {
 };
 
 // ---- TemplateParser instance methods ----
-// Add renderers for the specified element to specified parent node
-TemplateParser.prototype.addTemplateNodesAndRenderers = function(element, parentNode) {
+// Parse template by adding template nodes and renderers for the specified element to specified template node
+TemplateParser.prototype.parse = function(element, templateNode) {
 
 	// Validate templates do not overlap
-	if(TemplateNode.isTemplateNode(element) && TemplateNode.getTemplateNode(element) !== parentNode) {
+	if(TemplateNode.isTemplateNode(element) && TemplateNode.getTemplateNode(element) !== templateNode) {
 		throw new Error("Templates should not overlap. Use 'import' here.");
 	}
 
 	// Add template nodes for groupings and renderers for attributes and text (order is important!)
-	this.addGroupingNodes(element, parentNode);
-	this.addAttributeRenderers(element, parentNode);
-	this.addTextRenderers(element, parentNode);
+	this.parseGroupingNodes(element, templateNode);
+	this.parseAttributeRenderers(element, templateNode);
+	this.parseTextRenderers(element, templateNode);
 
 	// Process all direct children recursively
 	var self = this;
 	element.selectAll(ALL_DIRECT_CHILDREN).each(function() {
 		var childElement = select(this);
-		self.addTemplateNodesAndRenderers(childElement, parentNode);
+		self.parse(childElement, templateNode);
 	});
 };
 
-// Add grouping nodes (like repeat, if, with or import) for the specified element to specified parent node
-TemplateParser.prototype.addGroupingNodes = function(element, parentNode) {
+// Parse template by adding grouping nodes (like repeat, if, with or import) for the specified element to specified template node
+TemplateParser.prototype.parseGroupingNodes = function(element, templateNode) {
 
 	// Handle grouping nodes
 	var groupings = [
@@ -334,7 +336,7 @@ TemplateParser.prototype.addGroupingNodes = function(element, parentNode) {
 			TemplateParser.createDataFunction(grouping.match[1]),
 			childElement
 		);
-		parentNode.addChildNode(groupingNode);
+		templateNode.addChildNode(groupingNode);
 
 		// Remove grouping attribute(s)
 		element.attr(grouping.attr, null);
@@ -345,7 +347,7 @@ TemplateParser.prototype.addGroupingNodes = function(element, parentNode) {
 		// Add template nodes and renderers for the grouping element's child (except for import)
 		if(!importGrouping.importSelector) {
 			if(childElement.size() === 1) {
-				this.addTemplateNodesAndRenderers(childElement, groupingNode);
+				this.parse(childElement, groupingNode);
 
 				// Store event handlers in the grouping node (it will be used there).
 				// This is only relevant for childElement since it is removed
@@ -363,8 +365,8 @@ TemplateParser.prototype.addGroupingNodes = function(element, parentNode) {
 	}
 };
 
-// Add attribute renderers (include attributes referring to style properties) for the specified element to specified parent node
-TemplateParser.prototype.addAttributeRenderers = function(element, parentNode) {
+// Parse template by adding attribute renderers (include attributes referring to style properties) for the specified element to specified template node
+TemplateParser.prototype.parseAttributeRenderers = function(element, templateNode) {
 
 	// Create a fixed (ie non live) list of attributes
 	// (since attributes will be removed during processing)
@@ -414,7 +416,7 @@ TemplateParser.prototype.addAttributeRenderers = function(element, parentNode) {
 			}
 
 			// Add renderer
-			parentNode.addRenderer(new renderClass(
+			templateNode.addRenderer(new renderClass(
 				element,
 				TemplateParser.createDataFunction(match[1]),
 				renderAttributeName
@@ -432,8 +434,8 @@ TemplateParser.prototype.addAttributeRenderers = function(element, parentNode) {
 	});
 };
 
-// Add text renderers for the specified element to specified parent node
-TemplateParser.prototype.addTextRenderers = function(element, parentNode) {
+// Parse template by adding text renderers for the specified element to specified template node
+TemplateParser.prototype.parseTextRenderers = function(element, templateNode) {
 
 	// Handle text nodes (no other children allowed on these elements)
 	if(element.node().children.length === 0) {
@@ -445,7 +447,7 @@ TemplateParser.prototype.addTextRenderers = function(element, parentNode) {
 
 			// Add renderer
 			var textRenderer = new TextRenderer(element, TemplateParser.createDataFunction(match[1]));
-			parentNode.addRenderer(textRenderer);
+			templateNode.addRenderer(textRenderer);
 
 			// Remove field selector from text node
 			element.text(null);
