@@ -128,11 +128,6 @@ TemplateNode.prototype.renderNodes = function(templateElements, transition) {
 	return this;
 };
 
-// Answer whether the receiver is the root of a template
-TemplateNode.prototype.isRootNode = function() {
-	return true;
-};
-
 // ---- GroupingNode class ----
 // I am a TemplateNode and I create DOM trees based on my (or my
 // subclasses') specific purpose. I work like a conditional or control
@@ -275,11 +270,6 @@ GroupingNode.prototype.renderNodes = function(templateElements, transition) {
 	});
 
 	return this;
-};
-
-// Answer whether the receiver is the root of a template
-GroupingNode.prototype.isRootNode = function() {
-	return false;
 };
 
 // ---- RepeatNode class ----
