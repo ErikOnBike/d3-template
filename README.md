@@ -124,6 +124,7 @@ The following *features* are present:
 * A scope group similar to the Javascript `with` statement (through `data-with` attribute).
 * Other templates can be [imported](#Import-templates). Which template gets imported can be decided on render time based on the bound data.
 * Possibility to overwrite the template attribute names with custom names. If for example `repeat`, `if` and `with` is preferred over de long names, this can be specified when creating a [template](#template). Although such custom attributes are not compliant with HTML5 or SVG specifications, most browsers will accept it without complaining.
+* Render only part of a template by rendering on a group element (repeat, if, with or import).
 * [Event handlers](#Event-handlers) added onto elements before the template was created (using `selection.on()`), will be (re)applied when rendering the template.
 * Rendering can be done within a [transition](#Transitions) allowing animations.
 * Tweens (for attribute, style, property or text) can also be used in combination with a transition by providing a [tween data function](#tweenDataFunction).
@@ -206,7 +207,7 @@ If *options* is specified it should be an object containing properties describin
 
 <a name="render" href="#render">#</a> d3.<b>render</b>(<i>selection, data</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L142)
 
-Renders *data* onto the specified *selection*. If no template has been created from *selection* an exception is thrown.
+Renders *data* onto the specified *selection*. If no template has been created from *selection* an exception is thrown. If *selection* is part of a (larger) template and *selection* is a grouping element like `repeat`, `if`, `with` or `import` then rendering will be performed. Do remember that rendering on the template (root) will overwrite all template elements. So updating parts of a template should be done with caution.
 
 <a name="selection_template" href="#selection_template">#</a> <i>selection</i>.<b>template</b>(<i>[options]</i>) [<>](https://github.com/ErikOnBike/d3-template/blob/master/src/template.js#L96)
 
