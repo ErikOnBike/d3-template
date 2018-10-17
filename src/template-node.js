@@ -21,9 +21,29 @@ export function TemplateNode(rootElement) {
 
 	// Mark root element as a boundary
 	rootElement.attr(ELEMENT_BOUNDARY_ATTRIBUTE, BOOLEAN_ATTRIBUTE_VALUE);
+
+	// Add receiver to root element
+	rootElement.property("__d3t7tn__", this);
 }
 
 // ---- TemplateNode class methods ----
+// Answer whether specified element (singular) is a template node
+TemplateNode.isTemplateNode = function(element) {
+	var node = element.node();
+	return !!node.__d3t7tn__;
+};
+
+// Retrieve closest template node element of the specified DOM element (singular)
+// going higher up the DOM tree (ie only current element and parents are searched for).
+// If no template node is present null will be answered.
+TemplateNode.getTemplateNode = function(element) {
+	var node = element.node();
+	while(node && !node.__d3t7tn__) {
+		node = node.parentNode;
+	}
+	return node ? node.__d3t7tn__ : null;
+};
+
 // Copy specified data onto all children of the DOM node (recursively)
 // Parameter data is optional. If not supplied the node's data is used.
 TemplateNode.copyDataToChildren = function(node, data) {
@@ -59,6 +79,17 @@ TemplateNode.prototype.addRenderer = function(renderer) {
 	this.renderers.push(renderer);
 };
 
+// Render data onto the template
+TemplateNode.prototype.renderData = function(data, element, transition) {
+	element.datum(data);
+	this
+		.joinData(element)
+		.render(element, transition)
+	;
+
+	return this;
+};
+
 // Join data onto the template
 TemplateNode.prototype.joinData = function(rootElement) {
 
@@ -73,8 +104,7 @@ TemplateNode.prototype.joinData = function(rootElement) {
 	return this;
 };
 
-// Render data onto the template
-// Render attributes and text as well as child nodes.
+// Render attributes and text as well as child nodes using existing datum/data
 TemplateNode.prototype.render = function(rootElement, transition) {
 
 	// Render attributes
@@ -132,13 +162,13 @@ GroupingNode.prototype.joinData = function(rootElement) {
 	var childElement = this.getChildElement(rootElement);
 	var childNode = childElement.node();
 	var templateElements = this.resolveTemplateElements(rootElement);
-	if(childNode && childNode.__d3t7__) {
+	if(childNode && childNode.__d3t7tn__) {
 
 		// This is import of template. If imported template has
 		// changed, remove current children and create new template.
 		var currentChildNode = templateElements.node();
-		if(currentChildNode.firstElementChild && currentChildNode.firstElementChild.__d3t7__) {
-			if(childNode.__d3t7__ !== currentChildNode.firstElementChild.__d3t7__) {
+		if(currentChildNode.firstElementChild) {
+			if(childNode.__d3t7tn__ !== currentChildNode.firstElementChild.__d3t7tn__) {
 				currentChildNode.removeChild(currentChildNode.firstElementChild);
 			}
 		}
@@ -146,7 +176,7 @@ GroupingNode.prototype.joinData = function(rootElement) {
 
 	// Sanity check
 	if(childElement.size() === 0) {
-		return;
+		return this;
 	}
 
 	// Join data onto DOM
@@ -164,8 +194,8 @@ GroupingNode.prototype.joinData = function(rootElement) {
 				// (removing its id for uniqueness and copying template if applicable)
 				var clonedNode = childNode.cloneNode(true);
 				clonedNode.removeAttribute("id");
-				if(childNode.__d3t7__) {
-					clonedNode.__d3t7__ = childNode.__d3t7__;
+				if(childNode.__d3t7tn__) {
+					clonedNode.__d3t7tn__ = childNode.__d3t7tn__;
 				}
 				return clonedNode;
 			})
@@ -341,6 +371,8 @@ ImportNode.prototype.joinData = function(rootElement) {
 		var element = select(this);
 		GroupingNode.prototype.joinData.call(self, element);
 	});
+
+	return this;
 };
 
 // Render data onto the template
@@ -360,4 +392,6 @@ ImportNode.prototype.render = function(rootElement, transition) {
 		// Render the imported template
 		element.render(self.getRegularDataFunction());
 	});
+
+	return this;
 };

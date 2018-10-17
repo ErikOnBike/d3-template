@@ -102,7 +102,6 @@ tape("render group-repeat: render repeat array with object values render twice",
 	selection.selectAll(".icon").each(function(d) {
 		test.notEqual(d, "I", "Second content data bound");
 	});
-
 	test.end();
 });
 

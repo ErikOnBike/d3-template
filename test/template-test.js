@@ -95,9 +95,43 @@ tape("template: template fails on invalid expressions", function(test) {
 	test.end();
 });
 
-tape("template: template fail on overlap", function(test) {
+tape("template: template fail on overlap (from inner to outer)", function(test) {
 	global.document = jsdom('<div data-repeat="{{d}}"><div id="inner" data-if="{{d}}"><div>{{d}}</div></div></div>');
 	d3.select("#inner").template();
 	test.throws(function() { d3.select("div").template(); }, /Templates should not overlap\./, "Templates should not overlap");
+	test.end();
+});
+
+tape("template: template fail on overlap (from outer to inner)", function(test) {
+	global.document = jsdom('<div data-value="{{d}}"><div id="inner" data-if="{{d}}"><div>{{d}}</div></div></div>');
+	d3.select("div").template();
+	test.throws(function() { d3.select("#inner").template(); }, /Templates should not overlap\./, "Templates should not overlap");
+	test.end();
+});
+
+tape("template: template render on element within template", function(test) {
+	global.document = jsdom('<div><h1>{{d.title}}</h1><p>{{d.text}}</p><ul data-repeat="{{d.list}}"><li>{{d}}</li></ul></div>');
+	var selection = d3.select("div").template();
+	var data = {
+		title: "My title",
+		text: "Hello world",
+		list: [ "one", "two", "three" ]
+	};
+	selection.render(data);
+	test.equals(selection.select("h1").text(), "My title", "Initial title set correctly");
+	test.equals(selection.select("p").text(), "Hello world", "Initial text set correctly");
+	selection.selectAll("li").each(function(d, i) {
+		test.equals(d3.select(this).text(), data.list[i], "Initial list item set correctly");
+	});
+	data.title = "Partial render";
+	data.text = "Now for something completely different!";
+	data.list = [ "one" ];
+	selection.select("ul").render(data);
+	test.equals(selection.select("h1").text(), "My title", "Secondary title set correctly");
+	test.equals(selection.select("p").text(), "Hello world", "Secondary text set correctly");
+	selection.selectAll("li").each(function(d, i) {
+		test.equals(d3.select(this).text(), data.list[i], "Secondary list item set correctly");
+	});
+	test.throws(function() { selection.select("p").render(data); }, /Method render\(\) called on non-template selection\./, "Rendering non template node not allowed");
 	test.end();
 });
