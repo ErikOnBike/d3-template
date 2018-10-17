@@ -245,10 +245,19 @@ GroupingNode.prototype.storeEventHandlers = function(element) {
 		var childElement = select(this);
 		self.storeEventHandlers(childElement);
 	});
+
+	return this;
 };
 
 // Apply event handlers onto specified elements (which where created by joining data)
 GroupingNode.prototype.applyEventHandlers = function(elements) {
+
+	// Validate there are elements to apply the event handlers on
+	if(elements.size() === 0) {
+		return this;
+	}
+
+	// Apply event handlers
 	this.storedEventHandlers.forEach(function(storedEventHandler) {
 		var selection = storedEventHandler.templatePath.resolve(elements);
 		var eventHandlers = storedEventHandler.eventHandlers;
@@ -260,6 +269,8 @@ GroupingNode.prototype.applyEventHandlers = function(elements) {
 			selection.on(typename, eventHandler.value, eventHandler.capture);
 		});
 	});
+
+	return this;
 };
 
 // Render data onto the child nodes of the template
