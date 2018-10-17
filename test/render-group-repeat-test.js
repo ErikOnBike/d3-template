@@ -125,6 +125,21 @@ tape("render group-repeat: render repeat array with object values and event hand
 	test.end();
 });
 
+tape("render group-repeat: render repeat array with object values and event handlers on nested child, but render no child", function(test) {
+	global.document = jsdom("<div data-repeat='{{d}}'><div><span>{{d}}</span></div></div>");
+	var selection = d3.select("div");
+	// Add event handler (before creating template)
+	selection.selectAll("span").on("click", function() {
+		// Do nothing
+	});
+	// This should not fail
+	selection.template().render([]);
+	// Render a single child
+	selection.render([ "hello" ]);
+	test.equal(selection.select("span").on("click") !== null, true, "Event handler installed");
+	test.end();
+});
+
 tape("render group-repeat: render repeat array with object values containing arrays", function(test) {
 	global.document = jsdom("<table><tbody  data-repeat='{{d.matrix}}'><tr data-repeat='{{d.row}}'><td data-value='{{d.value}}'>{{d.content}}</td></tr></tbody></table>");
 	var selection = d3.select("table");
