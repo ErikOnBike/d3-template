@@ -127,11 +127,50 @@ tape("template: template render on element within template", function(test) {
 	data.text = "Now for something completely different!";
 	data.list = [ "one" ];
 	selection.select("ul").render(data);
+	// Did not change
 	test.equals(selection.select("h1").text(), "My title", "Secondary title set correctly");
 	test.equals(selection.select("p").text(), "Hello world", "Secondary text set correctly");
+	// Did change
 	selection.selectAll("li").each(function(d, i) {
 		test.equals(d3.select(this).text(), data.list[i], "Secondary list item set correctly");
 	});
 	test.throws(function() { selection.select("p").render(data); }, /Method render\(\) called on non-template selection\./, "Rendering non template node not allowed");
+	test.end();
+});
+
+tape("template: template render on element nested deeper within template", function(test) {
+	global.document = jsdom('<div><div class="outer" data-index="{{i}}" data-repeat="{{d}}"><div><div class="inner" data-index="{{i}}" data-repeat="{{d}}"><div>{{d}}</div></div></div></div>');
+	var selection = d3.select("div").template();
+	var data = [
+		[ "one", "two", "three" ],
+		[ "eins", "zwei", "drei" ],
+		[ "un", "deux", "trois" ]
+	];
+	selection.render(data);
+	test.equals(selection.text(), data.map(function(d) { return d.join(""); }).join(""), "All data elements set correctly");
+	var singleData = [ "een", "twee", "drie" ];
+	var copyData = data.slice();
+	copyData[1] = singleData;
+	selection.select("div.inner[data-index=\"1\"]").render(singleData);
+	test.equals(selection.text(), copyData.map(function(d) { return d.join(""); }).join(""), "Single data element set correctly");
+	test.end();
+});
+
+tape("template: template render on element imported within template", function(test) {
+	global.document = jsdom('<div><div class="outer" data-index="{{i}}" data-repeat="{{d}}"><div><div class="importer" data-import="{{`#template`}}"></div></div></div></div><div id="template"><div class="imported" data-index="{{i}}" data-repeat="{{d}}"><div><div class="inner" data-index="{{i}}" data-repeat="{{d}}"><span><span>{{d}}</span></span></div></div></div>');
+	d3.select("#template").template();
+	var selection = d3.select("div").template();
+	var data = [ [
+		[ "one", "two", "three" ],
+		[ "eins", "zwei", "drei" ],
+		[ "un", "deux", "trois" ]
+	] ];
+	selection.render(data);
+	test.equals(selection.text(), data[0].map(function(d) { return d.join(""); }).join(""), "All data elements set correctly");
+	var singleData = [ "een", "twee", "drie" ];
+	var copyData = data.slice();
+	copyData[0][1] = singleData;
+	selection.select(".imported").render(copyData[0]);
+	test.equals(selection.text(), copyData[0].map(function(d) { return d.join(""); }).join(""), "Single data element set correctly");
 	test.end();
 });

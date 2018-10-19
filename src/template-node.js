@@ -186,16 +186,27 @@ GroupingNode.prototype.joinData = function(rootElement) {
 	;
 
 	// Add new elements
+	var self = this;
 	var newElements = joinedElements
 		.enter()
 			.append(function() {
 
-				// Return a clone of the child element
-				// (removing its id for uniqueness and copying template if applicable)
+				// Clone the child element
 				var clonedNode = childNode.cloneNode(true);
+
+				// Remove its id for uniqueness
 				clonedNode.removeAttribute("id");
+
+				// Copy the TemplateNodes onto the clone
 				if(childNode.__d3t7tn__) {
 					clonedNode.__d3t7tn__ = childNode.__d3t7tn__;
+					select(clonedNode).selectAll("[" + ELEMENT_BOUNDARY_ATTRIBUTE + "]").each(function(d, i) {
+						this.__d3t7tn__ = childNode.__d3t7tn__.childNodes[i];
+					});
+				} else {
+					select(clonedNode).selectAll("[" + ELEMENT_BOUNDARY_ATTRIBUTE + "]").each(function(d, i) {
+						this.__d3t7tn__ = self.childNodes[i];
+					});
 				}
 				return clonedNode;
 			})
