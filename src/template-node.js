@@ -390,8 +390,15 @@ ImportNode.prototype.joinData = function(rootElement) {
 	// child element imported.
 	var self = this;
 	this.resolveTemplateElements(rootElement).each(function() {
+
+		// Join data on element itself
 		var element = select(this);
 		GroupingNode.prototype.joinData.call(self, element);
+
+		// Join data on imported element
+		var importedNode = this.firstElementChild;
+		var importedElement = select(importedNode);
+		importedNode.__d3t7tn__.joinData(importedElement);
 	});
 
 	return this;
@@ -401,18 +408,14 @@ ImportNode.prototype.joinData = function(rootElement) {
 ImportNode.prototype.render = function(rootElement, transition) {
 
 	// Delegate the rendering to the child elements (the imported templates)
-	var self = this;
-	var templateElements = this.resolveTemplateElements(rootElement);
-	templateElements.select(function() { return this.firstElementChild; }).each(function() {
-		var element = select(this);
+	this.resolveTemplateElements(rootElement).each(function() {
 
-		// Bind the transition (if applicable)
-		if(transition) {
-			element = element.transition(transition);
-		}
+		// No need to render on element itself since there is nothing to render
 
 		// Render the imported template
-		element.render(self.getRegularDataFunction());
+		var importedNode = this.firstElementChild;
+		var importedElement = select(importedNode);
+		importedNode.__d3t7tn__.render(importedElement, transition);
 	});
 
 	return this;

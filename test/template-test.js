@@ -157,7 +157,7 @@ tape("template: template render on element nested deeper within template", funct
 });
 
 tape("template: template render on element imported within template", function(test) {
-	global.document = jsdom('<div><div class="outer" data-index="{{i}}" data-repeat="{{d}}"><div><div class="importer" data-import="{{`#template`}}"></div></div></div></div><div id="template"><div class="imported" data-index="{{i}}" data-repeat="{{d}}"><div><div class="inner" data-index="{{i}}" data-repeat="{{d}}"><span><span>{{d}}</span></span></div></div></div>');
+	global.document = jsdom('<div><div class="outer" data-index="{{i}}" data-repeat="{{d}}"><div><div class="importer" data-import="{{`#template`}}"></div></div></div></div><div id="template"><div class="imported" data-index="{{i}}" data-repeat="{{d}}"><div><div class="inner" data-index="{{i}}" data-repeat="{{d}}"><span><span>{{d}}</span></span></div></div></div></div>');
 	d3.select("#template").template();
 	var selection = d3.select("div").template();
 	var data = [ [
