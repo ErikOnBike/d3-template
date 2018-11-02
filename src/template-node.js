@@ -22,8 +22,10 @@ export function TemplateNode(rootElement) {
 	// Mark root element as a boundary
 	rootElement.attr(ELEMENT_BOUNDARY_ATTRIBUTE, BOOLEAN_ATTRIBUTE_VALUE);
 
-	// Add receiver to root element
-	rootElement.property("__d3t7tn__", this);
+	// Add receiver to root element (if none is present yet)
+	if(!rootElement.property("__d3t7tn__")) {
+		rootElement.property("__d3t7tn__", this);
+	}
 }
 
 // ---- TemplateNode class methods ----
@@ -144,43 +146,75 @@ function GroupingNode(element, dataFunction, childElement) {
 GroupingNode.prototype = Object.create(TemplateNode.prototype);
 GroupingNode.prototype.constructor = GroupingNode;
 
+// ---- GroupingNode class methods ----
+// Answer a clone of the specified childNode
+GroupingNode.cloneChildNode = function(childNode) {
+
+	// Clone the child element
+	var clonedNode = childNode.cloneNode(true);
+
+	// Remove its id for uniqueness
+	clonedNode.removeAttribute("id");
+
+	return clonedNode;
+};
+
 // ---- GroupingNode instance methods ----
 // Answer the data function of the receiver
 GroupingNode.prototype.getDataFunction = function() {
 	return this.dataFunction;
 };
 
-// Answer the child element of the receiver
-GroupingNode.prototype.getChildElement = function(/* rootElement */) {
-	return this.childElement;
-};
-
 // Join data onto the receiver (using rootElement as base for selecting the DOM elements)
 GroupingNode.prototype.joinData = function(rootElement) {
 
-	// Retrieve child element and handle (imported) templates specifically
-	var childElement = this.getChildElement(rootElement);
-	var childNode = childElement.node();
-	var templateElements = this.resolveTemplateElements(rootElement);
-	if(childNode && childNode.__d3t7tn__) {
-
-		// This is import of template. If imported template has
-		// changed, remove current children and create new template.
-		var currentChildNode = templateElements.node();
-		if(currentChildNode.firstElementChild) {
-			if(childNode.__d3t7tn__ !== currentChildNode.firstElementChild.__d3t7tn__) {
-				currentChildNode.removeChild(currentChildNode.firstElementChild);
-			}
-		}
-	}
-
 	// Sanity check
-	if(childElement.size() === 0) {
+	if(this.childElement.size() === 0) {
 		return this;
 	}
 
+	// Create DOM structure
+	var updatedElements = this.createDOMStructure(rootElement, function() {
+
+		// Clone the child element
+		var childNode = this.childElement.node();
+		var clonedNode = GroupingNode.cloneChildNode(childNode);
+
+		// Copy the TemplateNodes onto the clone
+		if(childNode.__d3t7tn__) {
+			clonedNode.__d3t7tn__ = childNode.__d3t7tn__;
+		}
+		var childNodes = this.childNodes;
+		select(clonedNode).selectAll("[" + ELEMENT_BOUNDARY_ATTRIBUTE + "]").each(function(d, i) {
+			this.__d3t7tn__ = childNodes[i];
+		});
+
+		return clonedNode;
+	});
+
+	// Update data of children (both new and updated)
+	updatedElements.each(function() {
+
+		// Elements receive data in root by enter/append above so don't provide data
+		TemplateNode.copyDataToChildren(this);
+	});
+
+	// Join data on newly created childs
+	this.childNodes.forEach(function(childNode) {
+		childNode.joinData(updatedElements);
+	});
+
+	return this;
+};
+
+// Create the DOM structure for the receiver and answer the updated DOM nodes (elements) as selection
+// The parameter createChildNode is a function responsible for creating a new child node.
+// It will and should be called repeatedly since childs can be different elements based on their data value.
+// `this` is set to the receiver when calling the createChildNode function.
+GroupingNode.prototype.createDOMStructure = function(rootElement, createChildNode) {
+
 	// Join data onto DOM
-	var joinedElements = templateElements
+	var joinedElements = this.resolveTemplateElements(rootElement)
 		.selectAll(ALL_DIRECT_CHILDREN)
 			.data(this.getDataFunction())
 	;
@@ -190,25 +224,7 @@ GroupingNode.prototype.joinData = function(rootElement) {
 	var newElements = joinedElements
 		.enter()
 			.append(function() {
-
-				// Clone the child element
-				var clonedNode = childNode.cloneNode(true);
-
-				// Remove its id for uniqueness
-				clonedNode.removeAttribute("id");
-
-				// Copy the TemplateNodes onto the clone
-				if(childNode.__d3t7tn__) {
-					clonedNode.__d3t7tn__ = childNode.__d3t7tn__;
-					select(clonedNode).selectAll("[" + ELEMENT_BOUNDARY_ATTRIBUTE + "]").each(function(d, i) {
-						this.__d3t7tn__ = childNode.__d3t7tn__.childNodes[i];
-					});
-				} else {
-					select(clonedNode).selectAll("[" + ELEMENT_BOUNDARY_ATTRIBUTE + "]").each(function(d, i) {
-						this.__d3t7tn__ = self.childNodes[i];
-					});
-				}
-				return clonedNode;
+				return createChildNode.call(self);
 			})
 	;
 
@@ -221,20 +237,8 @@ GroupingNode.prototype.joinData = function(rootElement) {
 			.remove()
 	;
 
-	// Update data of children (both new and updated)
-	var updatedElements = newElements.merge(joinedElements);
-	updatedElements.each(function() {
-
-		// Elements receive data in root by enter/append above so don't provide data
-		TemplateNode.copyDataToChildren(this);
-	});
-
-	// Create additional child elements on newly created childs
-	this.childNodes.forEach(function(childNode) {
-		childNode.joinData(updatedElements);
-	});
-
-	return this;
+	// Answer the new and updated elements
+	return newElements.merge(joinedElements);
 };
 
 // Store the event handlers of the specified element in the receiver
@@ -372,33 +376,44 @@ ImportNode.prototype.constructor = ImportNode;
 // Answer a data function (same as for WithNode) for applying an enter-update-exit pattern
 ImportNode.prototype.getDataFunction = WithNode.prototype.getDataFunction;
 
-// Answer the data function for regular usage (see explanation above)
-ImportNode.prototype.getRegularDataFunction = GroupingNode.prototype.getDataFunction;
-
-// Answer the actual child element (based on the specified root element)
-ImportNode.prototype.getChildElement = function(rootElement) {
-
-	// The childElement instance variable contains either the selection or a selector
-	var childElementOrSelector = this.childElement.call(rootElement.node(), rootElement.datum(), 0, rootElement.nodes());
-	return childElementOrSelector.selectAll ? childElementOrSelector : select(childElementOrSelector);
-};
-
 // Join data onto the receiver (using rootElement as base for selecting the DOM elements)
 ImportNode.prototype.joinData = function(rootElement) {
 
-	// Handle element for element allowing each to have its own
-	// child element imported.
+	// Handle element for element allowing each to have its own child element imported
 	var self = this;
-	this.resolveTemplateElements(rootElement).each(function() {
+	this.resolveTemplateElements(rootElement).each(function(d, i, nodes) {
 
-		// Join data on element itself
+		// Retrieve element and child element
 		var element = select(this);
-		GroupingNode.prototype.joinData.call(self, element);
+		var childElementOrSelector = self.childElement.call(this, d, i, nodes);
+		var childElement = childElementOrSelector.selectAll ? childElementOrSelector : select(childElementOrSelector);
+		var childNode = childElement.node();
+		var templateNode = childNode.__d3t7tn__;
 
-		// Join data on imported element
-		var importedNode = this.firstElementChild;
-		var importedElement = select(importedNode);
-		importedNode.__d3t7tn__.joinData(importedElement);
+		// If imported template has changed, remove current child(ren)
+		// (a new one will be created when the DOM structure is created)
+		if(this.firstElementChild && this.firstElementChild.__d3t7tn__ !== templateNode) {
+			this.removeChild(this.firstElementChild);
+		}
+
+		// Create the DOM structure
+		var importedElement = self.createDOMStructure(element, function() {
+
+			// Clone the child element
+			var clonedNode = GroupingNode.cloneChildNode(childNode);
+
+			// Copy the TemplateNodes onto the clone
+			clonedNode.__d3t7tn__ = templateNode;
+			var childNodes = templateNode.childNodes;
+			select(clonedNode).selectAll("[" + ELEMENT_BOUNDARY_ATTRIBUTE + "]").each(function(d, i) {
+				this.__d3t7tn__ = childNodes[i];
+			});
+
+			return clonedNode;
+		});
+
+		// Join data on the newly created structure
+		templateNode.joinData(importedElement);
 	});
 
 	return this;
@@ -410,12 +425,11 @@ ImportNode.prototype.render = function(rootElement, transition) {
 	// Delegate the rendering to the child elements (the imported templates)
 	this.resolveTemplateElements(rootElement).each(function() {
 
-		// No need to render on element itself since there is nothing to render
-
 		// Render the imported template
 		var importedNode = this.firstElementChild;
 		var importedElement = select(importedNode);
-		importedNode.__d3t7tn__.render(importedElement, transition);
+		var templateNode = importedNode.__d3t7tn__;
+		templateNode.render(importedElement, transition);
 	});
 
 	return this;
