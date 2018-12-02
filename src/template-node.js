@@ -65,6 +65,25 @@ TemplateNode.copyDataToChildren = function(node, data) {
 	}
 };
 
+// Apply specified event handlers onto the selection or nodes
+TemplateNode.applyEventHandlersToSelection = function(eventHandlers, selectionOrNodes) {
+
+	// Sanity check
+	if(!eventHandlers || eventHandlers.length === 0) {
+		return;
+	}
+
+	// Apply the events
+	var selection = selectionOrNodes.selectAll ? selectionOrNodes : select(selectionOrNodes);
+	eventHandlers.forEach(function(eventHandler) {
+		var typename = eventHandler.type;
+		if(eventHandler.name) {
+			typename += "." + eventHandler.name;
+		}
+		selection.on(typename, eventHandler.value, eventHandler.capture);
+	});
+};
+
 // ---- TemplateNode instance methods ----
 // Answer the elements referred to by the receiver
 TemplateNode.prototype.resolveTemplateElements = function(rootElement) {
@@ -276,13 +295,7 @@ GroupingNode.prototype.applyEventHandlers = function(elements) {
 	this.storedEventHandlers.forEach(function(storedEventHandler) {
 		var selection = storedEventHandler.templatePath.resolve(elements);
 		var eventHandlers = storedEventHandler.eventHandlers;
-		eventHandlers.forEach(function(eventHandler) {
-			var typename = eventHandler.type;
-			if(eventHandler.name) {
-				typename += "." + eventHandler.name;
-			}
-			selection.on(typename, eventHandler.value, eventHandler.capture);
-		});
+		TemplateNode.applyEventHandlersToSelection(eventHandlers, selection);
 	});
 
 	return this;
@@ -407,6 +420,14 @@ ImportNode.prototype.joinData = function(rootElement) {
 			var childNodes = templateNode.childNodes;
 			select(clonedNode).selectAll("[" + ELEMENT_BOUNDARY_ATTRIBUTE + "]").each(function(d, i) {
 				this.__d3t7tn__ = childNodes[i];
+			});
+
+			// Copy the event handlers
+			TemplateNode.applyEventHandlersToSelection(childNode.__on, clonedNode);
+			var allChildrenNodes = select(childNode).selectAll("*").nodes();
+			var allClonedChildrenNodes = select(clonedNode).selectAll("*").nodes();
+			allChildrenNodes.forEach(function(childNode, i) {
+				TemplateNode.applyEventHandlersToSelection(childNode.__on, allClonedChildrenNodes[i]);
 			});
 
 			return clonedNode;
