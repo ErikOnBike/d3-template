@@ -146,3 +146,23 @@ tape("render group-import: import with comment as child", function(test) {
 	test.equal(selection.select(".component span").text(), "Hello", "import includes child nodes");
 	test.end();
 });
+
+tape("render group-import: import with event handlers on children", function(test) {
+	global.document = jsdom("<body><div id='component' class='outer'><span class='inner'>Hello</span></div><div id='template'><div data-import='{{\"#component\"}}'></div></div></body>");
+	var outerReached = false;
+	var innerReached = false;
+	// Setup event handlers before creating the component
+	d3.select(".outer").on("click", function() { outerReached = true; });
+	d3.select(".inner").on("click", function() { innerReached = true; });
+	d3.select("#component").template();
+	// Create and render the template
+	var selection = d3.select("#template");
+	selection.template().render(null);
+	var innerElement = selection.select(".inner");
+	innerElement.on("click").apply(innerElement.node(), [ innerElement.node().__data__ ]);
+	test.equal(innerReached, true, "Inner element received event handlers");
+	var outerElement = selection.select(".outer");
+	outerElement.on("click").apply(outerElement.node(), [ outerElement.node().__data__ ]);
+	test.equal(outerReached, true, "Outer element received event handlers");
+	test.end();
+});
