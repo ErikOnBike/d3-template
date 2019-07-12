@@ -1,6 +1,6 @@
 {
   "name": "d3-template-plugin",
-  "version": "2.0.9",
+  "version": "2.0.10",
   "description": "Template plugin for D3js.",
   "keywords": [
     "d3",
@@ -40,6 +40,7 @@
     "nyc": "^14",
     "rollup": "^1",
     "rollup-plugin-uglify": "^6",
-    "tape": "^4"
+    "tape": "^4",
+    "lodash": ">=4.17.13"
   }
 }
