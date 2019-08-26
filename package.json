@@ -1,6 +1,6 @@
 {
   "name": "d3-template-plugin",
-  "version": "2.0.10",
+  "version": "2.0.11",
   "description": "Template plugin for D3js.",
   "keywords": [
     "d3",
@@ -35,7 +35,7 @@
   "devDependencies": {
     "d3-color": "^1",
     "d3-interpolate": "^1",
-    "eslint": "^5",
+    "eslint": "^6",
     "jsdom": "^15",
     "nyc": "^14",
     "rollup": "^1",
