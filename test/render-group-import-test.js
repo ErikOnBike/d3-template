@@ -131,6 +131,25 @@ tape("render group-import: import combined with if", function(test) {
 	test.end();
 });
 
+tape("render group-import: if with import nested", function(test) {
+	global.document = jsdom("<body><div id='component' data-if='{{d.test}}'><div><span class='value'>{{d.value}}</span><div data-import='{{\"#component\"}}' data-with='{{d.child}}'></div></div></div></body>");
+	var component = d3.select("#component").template();
+	component.render({
+		test: true,
+		value: 'hello',
+		child: {
+			test: true,
+			value: 'world',
+			child: {
+				test: false,
+				value: 'xxx'
+			}
+		}
+	});
+	test.equal(d3.selectAll(".value").size(), 2, "Two elements created");
+	test.end();
+});
+
 tape("render group-import: import with child present", function(test) {
 	global.document = jsdom('<div data-import="{{d}}"><span>I should not be here</span></div>');
 	var selection = d3.select("div");

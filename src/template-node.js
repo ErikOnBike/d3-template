@@ -219,9 +219,11 @@ GroupingNode.prototype.joinData = function(rootElement) {
 	});
 
 	// Join data on newly created childs
-	this.childNodes.forEach(function(childNode) {
-		childNode.joinData(updatedElements);
-	});
+	if(updatedElements.size() > 0) {
+		this.childNodes.forEach(function(childNode) {
+			childNode.joinData(updatedElements);
+		});
+	}
 
 	return this;
 };
@@ -304,9 +306,11 @@ GroupingNode.prototype.applyEventHandlers = function(elements) {
 // Render data onto the child nodes of the template
 GroupingNode.prototype.renderNodes = function(templateElements, transition) {
 	var childElements = templateElements.selectAll(ALL_DIRECT_CHILDREN);
-	this.childNodes.forEach(function(childNode) {
-		childNode.render(childElements, transition);
-	});
+	if(childElements.size() > 0) {
+		this.childNodes.forEach(function(childNode) {
+			childNode.render(childElements, transition);
+		});
+	}
 
 	return this;
 };
@@ -434,7 +438,9 @@ ImportNode.prototype.joinData = function(rootElement) {
 		});
 
 		// Join data on the newly created structure
-		templateNode.joinData(importedElement);
+		if(importedElement.size() > 0) {
+			templateNode.joinData(importedElement);
+		}
 	});
 
 	return this;
