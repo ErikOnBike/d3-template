@@ -1,6 +1,6 @@
 import { select } from "d3-selection";
 import { TemplateNode, RepeatNode, IfNode, WithNode, ImportNode } from "./template-node";
-import { AttributeRenderer, StyleRenderer, PropertyRenderer, TextRenderer } from "./renderer";
+import { AttributeRenderer, StyleRenderer, PropertyRenderer, ClassRenderer, TextRenderer } from "./renderer";
 
 // ---- Defaults ----
 var defaults = {
@@ -10,7 +10,8 @@ var defaults = {
 	importAttribute: "data-import",
 	indirectAttributePrefix: "data-attr-",
 	indirectStylePrefix: "data-style-",
-	indirectPropertyPrefix: "data-prop-"
+	indirectPropertyPrefix: "data-prop-",
+	indirectClassPrefix: "data-class-"
 };
 
 // ---- Fix for IE (small kneefall because difficult to fix otherwise) ----
@@ -108,6 +109,7 @@ export function template(selection, options) {
 	options.indirectAttributeRegEx = new RegExp("^" + options.indirectAttributePrefix + "(.*)$", REG_EX_FLAG);
 	options.indirectStyleRegEx = new RegExp("^" + options.indirectStylePrefix + "(.*)$", REG_EX_FLAG);
 	options.indirectPropertyRegEx = new RegExp("^" + options.indirectPropertyPrefix + "(.*)$", REG_EX_FLAG);
+	options.indirectClassRegEx = new RegExp("^" + options.indirectClassPrefix + "(.*)$", REG_EX_FLAG);
 
 	// Create templates from the current selection
 	selection.each(function() {
@@ -214,7 +216,7 @@ TemplateParser.createDataFunction = function(expression) {
 	var isTweenFunction = false;
 	if(expression.startsWith("tween:")) {
 		isTweenFunction = true;
-		expression = expression.slice(6).trim();
+		expression = expression.slice(6);
 	}
 
 	// Create data function
@@ -406,6 +408,12 @@ TemplateParser.prototype.parseAttributeRenderers = function(element, templateNod
 					if(nameMatch) {
 						renderAttributeName = nameMatch[1];	// Render the referenced property
 						renderClass = PropertyRenderer;
+					} else {
+						nameMatch = renderAttributeName.match(options.indirectClassRegEx);
+						if(nameMatch) {
+							renderAttributeName = nameMatch[1];	// Render the referenced class name
+							renderClass = ClassRenderer;
+						}
 					}
 				}
 			}

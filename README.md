@@ -31,7 +31,7 @@ Templates look like they do in most other templating tools: rendering data by pl
 The general usage is probably best described by an example (see example on [bl.ocks.org](https://bl.ocks.org/ErikOnBike/f36ce2b4c88ef525d0cfe34a766d8067)):
 
 ```HTML
-<div id="person">
+<div id="person" data-class-alive="{{!d.deathdate}}">
     <div>
         <span>{{`Name: ${d.name}`}}</span>
     </div>
@@ -73,6 +73,7 @@ The general usage is probably best described by an example (see example on [bl.o
         .render({
             name: "Alan Turing",
             birthdate: new Date(1912, 5, 23),
+            deathdate: new Date(1954, 5, 7),
             honours: {
                 received: [
                     "Order of the British Empire",
@@ -110,7 +111,7 @@ To install via [npm](https://www.npmjs.com) use `npm install d3-template-plugin`
 
 The following *features* are present:
 * Data rendering onto attributes and text directly.
-* Data can also be rendered on attributes, styles or properties indirectly (through `data-attr-<name>`, `data-style-<name>` and `data-prop-<name>`). Properties can be useful for setting the `value` or `checked` property of HTML input elements for example. The indirect rendering is especially useful for SVG because most browsers do not like 'invalid' attribute values:
+* Data can also be rendered on attributes, styles, properties or class fields indirectly (through `data-attr-<name>`, `data-style-<name>`, `data-prop-<name>` and `data-class-<name>`). Properties can be useful for setting the `value` or `checked` property of HTML input elements for example. The indirect rendering is especially useful for SVG because most browsers do not like 'invalid' attribute values:
 
     ```SVG
     <!-- Most browsers do not like this (invalid according to SVG spec) -->
@@ -201,7 +202,8 @@ If *options* is specified it should be an object containing properties describin
     importAttribute: "data-import",
     indirectAttributePrefix: "data-attr-",
     indirectStylePrefix: "data-style-",
-    indirectPropertyPrefix: "data-prop-"
+    indirectPropertyPrefix: "data-prop-",
+    indirectClassPrefix: "data-class-"
 }
 ```
 
