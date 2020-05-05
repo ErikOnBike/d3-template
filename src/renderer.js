@@ -115,6 +115,30 @@ AttributeRenderer.prototype.render = function(templateElement, transition) {
 	}
 };
 
+// ---- ClassRenderer class ----
+// I am a Renderer and I render class fields inside template elements.
+//
+// Implementation: I render class fields of HTML or SVG elements/tags.
+export function ClassRenderer(element, dataFunction, className) {
+	if(dataFunction.isTweenFunction) {
+		throw new Error("Tween-function not allowed for class fields");
+	}
+	Renderer.call(this, element, dataFunction);
+	this.className = className;
+}
+ClassRenderer.prototype = Object.create(Renderer.prototype);
+ClassRenderer.prototype.constructor = ClassRenderer;
+
+// ---- ClassRenderer instance methods ----
+// Render the class field onto the template element specified, based on the receiver's data
+// The (optional) transition is ignored since a class name is either present or not.
+ClassRenderer.prototype.render = function(templateElement /*, transition */) {
+
+	// Set or clear the name in the class field
+	var element = this.resolveToRenderElement(templateElement);
+	element.classed(this.className, this.getDataFunction());
+};
+
 // ---- StyleRenderer class ----
 // I am a Renderer and I render styles inside template elements.
 //
